@@ -1,0 +1,192 @@
+#!/usr/bin/env python3
+"""
+Prompt Enhancement Script for Claude Code
+Version: 1.0.0 (P0.6)
+
+Display-Only Mode: 此脚本只负责增强提示词并显示结果，不执行任何任务。
+用户需要手动复制增强后的提示词并重新输入以执行。
+
+Usage:
+    python3 enhance.py "<prompt_text>"
+
+Environment Variables:
+    DEEPSEEK_API_KEY: Required. Your DeepSeek API key.
+
+Output Format:
+    成功时输出增强后的提示词到stdout
+    错误时输出错误信息到stderr并返回exit code 1
+"""
+
+import sys
+import os
+import asyncio
+from pathlib import Path
+
+# ============================================================================
+# 环境检查和依赖导入
+# ============================================================================
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    print("❌ Error: python-dotenv is not installed", file=sys.stderr)
+    print("📦 Please run: pip install -r requirements.txt", file=sys.stderr)
+    sys.exit(1)
+
+# 项目根目录 - 引用Prompt-Enhancement项目的核心模块
+PROJECT_ROOT = Path.home() / "Documents" / "augment-projects" / "Prompt-Enhancement"
+
+if not PROJECT_ROOT.exists():
+    print(f"❌ Error: Cannot find Prompt-Enhancement project at {PROJECT_ROOT}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("Please ensure the project is located at:", file=sys.stderr)
+    print(f"  {PROJECT_ROOT}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("Or update PROJECT_ROOT in this script to match your installation.", file=sys.stderr)
+    sys.exit(1)
+
+# 添加项目到Python路径
+sys.path.insert(0, str(PROJECT_ROOT))
+
+# 加载.env文件
+env_file = PROJECT_ROOT / ".env"
+if env_file.exists():
+    load_dotenv(env_file)
+else:
+    print("⚠️  Warning: .env file not found", file=sys.stderr)
+    print(f"Expected location: {env_file}", file=sys.stderr)
+    print("", file=sys.stderr)
+
+# 导入核心模块
+try:
+    from enhanced_prompt_generator import enhance_prompt_with_context
+except ImportError as e:
+    print(f"❌ Error: Cannot import enhanced_prompt_generator: {e}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print(f"Project root: {PROJECT_ROOT}", file=sys.stderr)
+    print(f"Python path: {sys.path[:3]}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("Please ensure all P0.6 modules are available in the project directory.", file=sys.stderr)
+    sys.exit(1)
+
+
+# ============================================================================
+# 验证和参数处理
+# ============================================================================
+
+def validate_environment():
+    """验证环境变量配置"""
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+
+    if not api_key:
+        print("❌ Error: DEEPSEEK_API_KEY not configured", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("🔑 Please set your DeepSeek API key:", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("Option 1 - Add to .env file:", file=sys.stderr)
+        print(f"  echo 'DEEPSEEK_API_KEY=your-api-key' >> {PROJECT_ROOT}/.env", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("Option 2 - Set environment variable:", file=sys.stderr)
+        print("  export DEEPSEEK_API_KEY='your-api-key'", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("💡 Get your API key from: https://platform.deepseek.com", file=sys.stderr)
+        return False
+
+    return True
+
+
+def parse_arguments():
+    """解析命令行参数"""
+    if len(sys.argv) < 2:
+        print("❌ Error: No prompt provided", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("Usage:", file=sys.stderr)
+        print('  python3 enhance.py "your prompt text"', file=sys.stderr)
+        print("", file=sys.stderr)
+        print("Example:", file=sys.stderr)
+        print('  python3 enhance.py "修复登录页面的bug"', file=sys.stderr)
+        return None
+
+    # 合并所有参数处理空格
+    prompt = " ".join(sys.argv[1:])
+
+    if not prompt.strip():
+        print("❌ Error: Prompt is empty", file=sys.stderr)
+        return None
+
+    return prompt.strip()
+
+
+# ============================================================================
+# 核心增强功能
+# ============================================================================
+
+async def enhance_prompt(prompt: str) -> dict:
+    """
+    使用P0.6的完整功能增强提示词
+
+    Args:
+        prompt: 原始提示词
+
+    Returns:
+        包含增强结果的字典
+    """
+    try:
+        # 使用P0.6的enhance_prompt_with_context
+        # 它会自动收集项目上下文（如果在项目目录中运行）
+        result = await enhance_prompt_with_context(
+            prompt=prompt,
+            project_path=str(PROJECT_ROOT),  # 可选：提供项目路径以收集上下文
+            timeout=60
+        )
+
+        return result
+
+    except asyncio.TimeoutError:
+        return {
+            "success": False,
+            "error": "API调用超时（60秒）。请检查网络连接或稍后重试。",
+            "original": prompt,
+            "enhanced": None
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"增强失败: {str(e)}",
+            "original": prompt,
+            "enhanced": None
+        }
+
+
+# ============================================================================
+# 主程序入口
+# ============================================================================
+
+async def main():
+    """主函数"""
+    # 验证环境
+    if not validate_environment():
+        sys.exit(1)
+
+    # 解析参数
+    prompt = parse_arguments()
+    if prompt is None:
+        sys.exit(1)
+
+    # 增强提示词
+    result = await enhance_prompt(prompt)
+
+    # 输出结果
+    if result['success']:
+        # 只输出增强后的提示词（Display-Only模式）
+        print(result['enhanced'])
+        sys.exit(0)
+    else:
+        # 输出错误信息
+        print(f"❌ {result['error']}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    # 运行异步主函数
+    asyncio.run(main())
