@@ -273,23 +273,6 @@ Prompt-Enhancement/
 - **[P0_4_COMPLETION_REPORT.md](P0_4_COMPLETION_REPORT.md)** - P0.4 详细报告
 - **[IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md)** - 长期改进计划
 
-## 🎯 下一步计划
-
-### 立即 (本周)
-- [x] ✅ 完成 P0.6 测试和文档
-- [x] ✅ 整理文档库并归档过时文档
-- [ ] 与团队共享 P0.6 完成报告
-
-### 短期 (P1 阶段，下周)
-- [ ] P1: 命令行接口集成
-- [ ] 设计 `/pe` 命令参数
-- [ ] 集成到 Claude Code 工具链
-
-### 中期 (P2 阶段，2-4 周)
-- [ ] 支持更多模型 (OpenAI GPT-4 等)
-- [ ] 多语言支持
-- [ ] 缓存持久化
-
 ## 📊 测试覆盖率
 
 - **单元测试**: 100% (31/31 通过) ✅ ← P0.6 更新
