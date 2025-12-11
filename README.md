@@ -1,16 +1,17 @@
 # 📚 Prompt Enhancement - 提示词增强系统
 
-**版本**: 1.01 (稳定版) | **最后更新**: 2025-12-11 | **下一版本**: [v1.1 路线图](ROADMAP_V1_1.md)
+**版本**: 2.0.0 (跨项目部署版) | **最后更新**: 2025-12-11 | **下一版本**: [v2.1 路线图](ROADMAP_V2_1.md)
 
-一个智能的提示词增强系统，自动收集项目上下文并进行提示词优化，提升 AI 模型的响应质量。
+一个智能的提示词增强系统，自动收集项目上下文并进行提示词优化，提升 AI 模型的响应质量。**现已支持跨项目部署**！
 
-**🎉 v1.01 特性**:
-- ✨ **Display-Only 模式** - 增强后只显示，用户手动执行（符合 Auggle CLI 模式）
-- 🚀 **一键安装** - 运行 `./install.sh` 快速集成到 Claude Code
-- 📦 **GitHub 就绪** - 完整的发布包，支持开源分享
-- 📊 **完整 P0 功能** - P0.1-P0.6 所有功能完整实现
-- 🧪 **高质量测试** - 31/31 单元测试通过，87% 代码覆盖率
-- 📚 **详细文档** - 完整的 API 文档和使用指南
+**🎉 v2.0.0 特性** (新增部署系统):
+- 🐍 **Python/pip 包** - `pip install prompt-enhancement` 一行安装
+- 📦 **NPM 包** - `npm install -g @jodykwong/prompt-enhancement` 全局安装
+- 🔧 **一键脚本** - bash/python/powershell 跨平台安装脚本
+- 🎯 **自动化部署** - 自动检查依赖、创建符号链接、配置环境变量
+- ✅ **跨项目验证** - 已在 xlerobot 项目中部署验证成功
+- ✨ **Display-Only 模式** - 增强后只显示，用户手动执行
+- 📚 **完整文档系统** - INSTALL.md、QUICKSTART.md、TROUBLESHOOTING.md、DEPLOYMENT.md
 
 **📋 v1.1 即将推出**（预计 2025年1月）:
 - 🔥 **响应速度优化** - 30-60s → 5-15s (80% 性能提升)
@@ -46,24 +47,59 @@ P0.6: ✅ 完成 (100%)
 
 ## 🚀 快速开始
 
-### 📦 安装（推荐）
+### 📦 三种安装方式
+
+#### 方式 1：使用 pip（推荐）
 
 ```bash
-# 克隆仓库
-git clone https://github.com/yourusername/Prompt-Enhancement.git
-cd Prompt-Enhancement
-
-# 一键安装到 Claude Code
-./install.sh
+pip install prompt-enhancement
+prompt-enhance-install /path/to/your/project
+prompt-enhance-setup
 ```
 
-安装脚本会：
-- ✅ 检查依赖并安装 Python 包
-- ✅ 提示您输入 DeepSeek API Key
-- ✅ 自动配置 `/pe` 命令
-- ✅ 验证安装成功
+**优点**：Python 开发者标准方式，自动依赖管理
 
-**详细安装指南**: [INSTALL.md](INSTALL.md)
+#### 方式 2：使用 NPM
+
+```bash
+npm install -g @jodykwong/prompt-enhancement
+prompt-enhance-install /path/to/your/project
+prompt-enhance-setup
+```
+
+**优点**：Node.js 开发者友好，全局可用
+
+#### 方式 3：一键脚本（跨平台）
+
+```bash
+# Linux/macOS
+bash cli/install.sh /path/to/your/project
+
+# Windows PowerShell
+.\cli\install.ps1 -ProjectPath "C:\path\to\project"
+
+# 通用 Python
+python3 cli/install.py /path/to/your/project
+```
+
+**优点**：无需额外依赖，完全跨平台
+
+### ✅ 部署验证
+
+已在 **xlerobot** 项目中验证部署成功：
+
+```bash
+# 验证命令
+python3 cli/install.py /home/sunrise/xlerobot
+
+# 结果
+✓ pe.md 命令已安装（符号链接）
+✓ enhance.py 脚本已复制
+✓ 所有 Python 模块已部署
+✓ .env 配置文件已创建
+```
+
+**详细安装指南**: [docs/deploy/INSTALL.md](docs/deploy/INSTALL.md) | [docs/deploy/QUICKSTART.md](docs/deploy/QUICKSTART.md)
 
 ---
 
@@ -214,6 +250,35 @@ MVP 包含以下测试用例：
 
 ```
 Prompt-Enhancement/
+├── 🔥 部署系统（v2.0.0 新增）
+│   ├── packages/
+│   │   ├── python/                     # pip 包源代码
+│   │   │   ├── setup.py
+│   │   │   ├── pyproject.toml
+│   │   │   └── prompt_enhancement/     # 包模块
+│   │   │       ├── __init__.py
+│   │   │       ├── installer.py        ⭐ 核心安装器
+│   │   │       └── cli.py              ⭐ CLI 接口
+│   │   │
+│   │   └── npm/                        # npm 包源代码
+│   │       ├── package.json
+│   │       └── scripts/
+│   │           ├── install.js          ⭐ 主安装脚本
+│   │           ├── configure.js
+│   │           └── verify.js
+│   │
+│   ├── cli/                            # 一键安装脚本
+│   │   ├── install.sh                  (Linux/macOS)
+│   │   ├── install.py                  (跨平台) ✅ 已测试
+│   │   └── install.ps1                 (Windows)
+│   │
+│   └── docs/deploy/                    # 部署文档
+│       ├── INSTALL.md                  (完整安装指南)
+│       ├── QUICKSTART.md               (5分钟快速开始)
+│       ├── TROUBLESHOOTING.md          (故障排除)
+│       ├── DEPLOYMENT.md               (发布指南)
+│       └── README.md                   (部署总结)
+│
 ├── 核心模块
 │   ├── tech_stack_detector.py          # P0.1: 技术栈检测
 │   ├── project_structure_analyzer.py   # P0.2: 项目结构分析
@@ -241,7 +306,11 @@ Prompt-Enhancement/
 └── 配置和文档
     ├── requirements.txt
     ├── .env.example
-    └── docs/ (即将创建)
+    ├── README.md                       (本文件，已更新)
+    └── docs/
+        ├── 核心功能文档
+        ├── 架构文档
+        └── API 参考
 ```
 
 ## 🛠️ 技术栈

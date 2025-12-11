@@ -1,0 +1,59 @@
+{
+  "name": "@jodykwong/prompt-enhancement",
+  "version": "1.0.0",
+  "description": "AI-powered prompt enhancement tool for development workflows",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "postinstall": "node scripts/post-install.js",
+    "setup": "node scripts/configure.js",
+    "verify": "node scripts/verify.js",
+    "install-to": "node scripts/install.js"
+  },
+  "bin": {
+    "prompt-enhance": "./scripts/cli.js",
+    "prompt-enhance-install": "./scripts/install.js",
+    "prompt-enhance-setup": "./scripts/configure.js",
+    "prompt-enhance-verify": "./scripts/verify.js"
+  },
+  "keywords": [
+    "prompt-engineering",
+    "ai",
+    "development",
+    "claude-code",
+    "deepseek",
+    "enhancement",
+    "optimization"
+  ],
+  "author": {
+    "name": "Jody Kwong",
+    "email": "jodykwong@example.com",
+    "url": "https://github.com/jodykwong"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jodykwong/Prompt-Enhancement"
+  },
+  "bugs": {
+    "url": "https://github.com/jodykwong/Prompt-Enhancement/issues"
+  },
+  "homepage": "https://github.com/jodykwong/Prompt-Enhancement#readme",
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {},
+  "files": [
+    "scripts/",
+    "lib/",
+    "README.md"
+  ],
+  "preferGlobal": true,
+  "publishConfig": {
+    "access": "public"
+  }
+}
