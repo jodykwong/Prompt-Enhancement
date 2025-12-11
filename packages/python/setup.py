@@ -23,7 +23,7 @@ if readme_file.exists():
 
 setup(
     name="prompt-enhancement",
-    version="1.0.0",
+    version="2.0.0",
     author="Jody Kwong",
     author_email="jodykwong@example.com",
     description="AI-powered prompt enhancement tool for development workflows",

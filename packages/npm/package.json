@@ -1,6 +1,6 @@
 {
   "name": "@jodykwong/prompt-enhancement",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "AI-powered prompt enhancement tool for development workflows",
   "main": "index.js",
   "type": "module",

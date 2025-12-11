@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prompt-enhancement"
-version = "1.0.0"
+version = "2.0.0"
 description = "AI-powered prompt enhancement tool for development workflows"
 readme = "README.md"
 requires-python = ">=3.8"
