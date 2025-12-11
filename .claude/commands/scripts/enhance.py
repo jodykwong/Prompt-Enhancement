@@ -33,16 +33,26 @@ except ImportError:
     print("📦 Please run: pip install -r requirements.txt", file=sys.stderr)
     sys.exit(1)
 
-# 项目根目录 - 引用Prompt-Enhancement项目的核心模块
-PROJECT_ROOT = Path.home() / "Documents" / "augment-projects" / "Prompt-Enhancement"
+# 项目根目录 - 使用相对路径自动检测
+# 优先使用 CLAUDE_PROJECT_DIR 环境变量（由 Claude Code 设置）
+# 否则使用脚本所在位置的上级目录
+if "CLAUDE_PROJECT_DIR" in os.environ:
+    PROJECT_ROOT = Path(os.environ["CLAUDE_PROJECT_DIR"])
+else:
+    # 脚本路径: .claude/commands/scripts/enhance.py
+    # 项目根目录应该是脚本所在位置的上上上级目录
+    script_dir = Path(__file__).resolve().parent
+    PROJECT_ROOT = script_dir.parent.parent.parent
 
 if not PROJECT_ROOT.exists():
     print(f"❌ Error: Cannot find Prompt-Enhancement project at {PROJECT_ROOT}", file=sys.stderr)
     print("", file=sys.stderr)
-    print("Please ensure the project is located at:", file=sys.stderr)
-    print(f"  {PROJECT_ROOT}", file=sys.stderr)
+    print("Debug info:", file=sys.stderr)
+    print(f"  Script dir: {Path(__file__).resolve().parent}", file=sys.stderr)
+    print(f"  Detected PROJECT_ROOT: {PROJECT_ROOT}", file=sys.stderr)
+    print(f"  CLAUDE_PROJECT_DIR: {os.environ.get('CLAUDE_PROJECT_DIR', 'Not set')}", file=sys.stderr)
     print("", file=sys.stderr)
-    print("Or update PROJECT_ROOT in this script to match your installation.", file=sys.stderr)
+    print("Please set CLAUDE_PROJECT_DIR environment variable or ensure correct directory structure.", file=sys.stderr)
     sys.exit(1)
 
 # 添加项目到Python路径
