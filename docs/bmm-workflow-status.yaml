@@ -1,0 +1,280 @@
+# BMad Workflow Status - Prompt Enhancement v1.1
+# Tracks progress through BMM methodology Analysis, Planning, Solutioning, and Implementation phases
+
+generated: "2025-12-15T15:30:00Z"
+project: "Prompt Enhancement"
+project_type: "v1.1 Brownfield Upgrade"
+selected_track: "bmad-method"
+field_type: "brownfield"
+workflow_path: "method-brownfield.yaml"
+next_phase: "prerequisite"
+
+# ============================================================================
+# PREREQUISITE PHASE (Brownfield Analysis)
+# ============================================================================
+prerequisite:
+  - workflow_id: "document-project"
+    name: "Document Existing Project"
+    agent: "analyst"
+    command: "/bmad:bmm:workflows:document-project"
+    status: "pending"
+    required: true
+    description: "Analyze v1.01 codebase structure and patterns"
+    purpose: "Create comprehensive documentation of existing system before planning enhancements"
+    output_file: "docs/project-documentation.md"
+
+# ============================================================================
+# PHASE 0: DISCOVERY (User-Selected Optional Workflows)
+# ============================================================================
+discovery:
+  - workflow_id: "brainstorm-project"
+    name: "Project Brainstorm"
+    agent: "analyst"
+    command: "/bmad:bmm:workflows:brainstorm-session"
+    status: "pending"
+    optional: true
+    included_by: "user_choice"
+    description: "Creative exploration of v1.1 enhancement possibilities"
+    purpose: "Generate ideas for how to evolve and enhance the existing system"
+    estimated_output: "Brainstorm session results with feature ideas"
+
+  - workflow_id: "research"
+    name: "Technical Research"
+    agent: "analyst"
+    command: "/bmad:bmm:workflows:research"
+    status: "pending"
+    optional: true
+    included_by: "user_choice"
+    description: "Research Agent documentation parsing, NLP techniques, prompt optimization best practices"
+    purpose: "Understand industry approaches and validate v1.1 design decisions"
+    domains: ["nlp", "prompt-engineering", "ai-tools"]
+
+  - workflow_id: "document-project"
+    name: "Document Existing Project (Alt)"
+    agent: "analyst"
+    command: "/bmad:bmm:workflows:document-project"
+    status: "pending"
+    optional: true
+    included_by: "user_choice"
+    description: "Deep analysis of v1.01 codebase"
+    purpose: "Create architectural overview of existing system"
+
+# ============================================================================
+# PHASE 1: PLANNING
+# ============================================================================
+planning:
+  - workflow_id: "prd"
+    name: "Product Requirements Document"
+    agent: "pm"
+    command: "/bmad:bmm:workflows:create-prd"
+    status: "pending"
+    required: true
+    description: "Define requirements for v1.1 feature enhancements"
+    purpose: "Capture new features, improvements, and success metrics"
+    output_file: "docs/prd-v1.1.md"
+    dependencies: ["design-v1.1", "brownfield-guide"]
+    note: "Base on existing DESIGN_V1.1.md analysis"
+
+  - workflow_id: "ux-design"
+    name: "UX Design"
+    agent: "ux-designer"
+    command: "/bmad:bmm:workflows:create-ux-design"
+    status: "pending"
+    conditional: "if_has_ui"
+    description: "Design user experience for Agent Docs Parser and new features"
+    purpose: "Plan CLI interactions and user-facing improvements"
+    output_file: "docs/ux-design-v1.1.md"
+    note: "Optional if no UI changes needed - may skip for backend-only updates"
+
+# ============================================================================
+# PHASE 2: SOLUTIONING
+# ============================================================================
+solutioning:
+  - workflow_id: "create-architecture"
+    name: "Create Architecture"
+    agent: "architect"
+    command: "/bmad:bmm:workflows:create-architecture"
+    status: "pending"
+    recommended: true
+    description: "Design integration architecture for v1.1 upgrades"
+    purpose: "Create focused solution design considering existing v1.01 constraints"
+    output_file: "docs/architecture-v1.1.md"
+    dependencies: ["prd", "design-v1.1"]
+    note: "HIGHLY RECOMMENDED: Synthesizes brownfield context into actionable design"
+
+  - workflow_id: "create-epics-stories"
+    name: "Create Epics & Stories"
+    agent: "pm"
+    command: "/bmad:bmm:workflows:create-epics-stories"
+    status: "pending"
+    required: true
+    description: "Break down v1.1 requirements into implementable stories"
+    purpose: "Create actionable, well-defined work items for development"
+    output_folder: "docs/epics"
+    dependencies: ["prd", "create-architecture"]
+    note: "Incorporates PRD, Architecture, and existing codebase context"
+
+  - workflow_id: "test-design"
+    name: "Test Architecture Design"
+    agent: "tea"
+    command: "/bmad:bmm:workflows:testarch-test-design"
+    status: "pending"
+    recommended: true
+    description: "System-level testability review for v1.1"
+    purpose: "Identify testing strategy and quality gates before implementation"
+    output_file: "docs/test-architecture-v1.1.md"
+    note: "Auto-detects system-level mode for comprehensive review"
+
+  - workflow_id: "validation-readiness"
+    name: "Implementation Readiness Check"
+    agent: "architect"
+    command: "/bmad:bmm:workflows:check-implementation-readiness"
+    status: "pending"
+    required: true
+    description: "Validate PRD, Architecture, Epics alignment"
+    purpose: "Ensure all planning is complete and consistent before development"
+    output_file: "docs/readiness-check-v1.1.md"
+    dependencies: ["prd", "create-architecture", "create-epics-stories"]
+    note: "Gate check: validates all prerequisite planning is complete"
+
+# ============================================================================
+# PHASE 3: IMPLEMENTATION
+# ============================================================================
+implementation:
+  - workflow_id: "sprint-planning"
+    name: "Sprint Planning"
+    agent: "sm"
+    command: "/bmad:bmm:workflows:sprint-planning"
+    status: "pending"
+    required: true
+    description: "Create sprint plan for v1.1 Day 1-3 development"
+    purpose: "Organize stories into sprints with clear milestones"
+    output_file: "docs/sprint-status.yaml"
+    dependencies: ["create-epics-stories"]
+    note: "Will organize Day 1, Day 2, Day 3 tasks into sprint structure"
+
+  - workflow_id: "dev-story-1"
+    name: "Develop Day 1 Stories"
+    agent: "dev"
+    command: "/bmad:bmm:workflows:dev-story"
+    status: "pending"
+    required: true
+    description: "Implement Agent Docs Parser (Task 1.2, 1.3, 1.4)"
+    purpose: "Deliver core parser functionality with tests"
+    sprint: 1
+    stories: ["agent-parser", "parser-tests"]
+    dependencies: ["sprint-planning"]
+    note: "Corresponds to BROWNFIELD_ITERATION_GUIDE.md Day 1"
+
+  - workflow_id: "dev-story-2"
+    name: "Develop Day 2 Stories"
+    agent: "dev"
+    command: "/bmad:bmm:workflows:dev-story"
+    status: "pending"
+    required: true
+    description: "Upgrade Context Collector and Prompt Generator"
+    purpose: "Deliver upgraded pipeline with integration tests"
+    sprint: 2
+    stories: ["context-upgrade", "generator-upgrade"]
+    dependencies: ["dev-story-1"]
+    note: "Corresponds to BROWNFIELD_ITERATION_GUIDE.md Day 2"
+
+  - workflow_id: "dev-story-3"
+    name: "Develop Day 3 Stories"
+    agent: "dev"
+    command: "/bmad:bmm:workflows:dev-story"
+    status: "pending"
+    required: true
+    description: "Documentation and v1.1.0-alpha Release"
+    purpose: "Deliver complete documentation and release v1.1.0-alpha"
+    sprint: 3
+    stories: ["api-documentation", "user-guide", "release-prep"]
+    dependencies: ["dev-story-2"]
+    note: "Corresponds to BROWNFIELD_ITERATION_GUIDE.md Day 3"
+
+  - workflow_id: "test-automation"
+    name: "Test Automation & CI/CD"
+    agent: "tea"
+    command: "/bmad:bmm:workflows:testarch-automate"
+    status: "pending"
+    recommended: true
+    description: "Expand test coverage and CI/CD pipeline"
+    purpose: "Ensure quality gates for releases"
+    output_file: "docs/ci-cd-config.yaml"
+    note: "Phase 4 enhancement - automated testing for releases"
+
+# ============================================================================
+# PROJECT CONTEXT
+# ============================================================================
+project_context:
+  version: "v1.1"
+  baseline: "v1.01"
+  current_branch: "feature/v1.1-brownfield"
+
+  completed_work:
+    - "DESIGN_V1.1.md (complete design specification)"
+    - "BROWNFIELD_ITERATION_GUIDE.md (detailed iteration plan)"
+    - "TEAM_CONFIG_CHECKLIST.md (team and schedule planning)"
+    - "DAY1_STARTUP_GUIDE.md (Day 1 detailed instructions)"
+    - "STARTUP_SUMMARY.md (comprehensive startup overview)"
+    - "src/v1_1/ and tests/v1_1/ (project structure initialized)"
+    - "BMad Method workflow init (this workflow)"
+
+  discovery_selections:
+    - "brainstorm-project (creative exploration)"
+    - "research (technical analysis)"
+    - "document-project (codebase analysis)"
+
+  key_documents:
+    design: "docs/DESIGN_V1.1.md"
+    iteration_guide: "docs/BROWNFIELD_ITERATION_GUIDE.md"
+    team_config: "docs/TEAM_CONFIG_CHECKLIST.md"
+    day1_guide: "docs/DAY1_STARTUP_GUIDE.md"
+
+  timeline:
+    phase_0_discovery: "Optional (parallel with Day 1)"
+    phase_1_planning: "Day 1-3 (concurrent with development)"
+    phase_2_solutioning: "Already 80% complete via DESIGN_V1.1"
+    phase_3_implementation: "Day 1-3 active development"
+    phase_4_optional: "Day 4-6 optional enhancements"
+
+# ============================================================================
+# NEXT STEPS
+# ============================================================================
+next_phase: "prerequisite"
+next_workflow_id: "document-project"
+next_agent: "analyst"
+next_command: "/bmad:bmm:workflows:document-project"
+next_workflow_name: "Document Existing Project"
+
+recommended_sequence:
+  1: "Optional: Run document-project to analyze v1.01 codebase"
+  2: "Optional: Run brainstorm and research discovery workflows"
+  3: "Start Day 1 development per BROWNFIELD_ITERATION_GUIDE.md"
+  4: "Document progress in this status file as you complete workflows"
+  5: "Check progress anytime: /bmad:bmm:workflows:workflow-status"
+
+# ============================================================================
+# NOTES
+# ============================================================================
+notes: |
+  This workflow status tracks your Prompt Enhancement v1.1 development
+  using the BMad Method for brownfield projects.
+
+  You have excellent preparation already:
+  - Detailed design document (DESIGN_V1.1.md)
+  - Clear iteration plan (BROWNFIELD_ITERATION_GUIDE.md)
+  - Structured team organization (TEAM_CONFIG_CHECKLIST.md)
+  - Day-by-day instructions (DAY1_STARTUP_GUIDE.md)
+
+  The formal BMM workflow process will help:
+  - Ensure no critical planning steps are missed
+  - Document decision-making at each phase
+  - Support team coordination and handoffs
+  - Provide clear progress tracking
+
+  You can start development immediately while optional discovery
+  workflows run in parallel.
+
+  Status: Ready to begin prerequisite (document-project analysis)
+  or jump directly to Day 1 implementation.
