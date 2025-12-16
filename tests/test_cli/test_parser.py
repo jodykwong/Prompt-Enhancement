@@ -267,3 +267,29 @@ class TestParameterParser:
 
         error_msg = str(exc_info.value).lower()
         assert "quote" in error_msg
+
+    def test_prompt_exceeds_max_length(self):
+        """Error when prompt exceeds MAX_PROMPT_LENGTH."""
+        parser = ParameterParser()
+
+        # Create a prompt longer than 10,000 chars
+        long_prompt = "a" * 10001
+
+        with pytest.raises(ParseError) as exc_info:
+            parser.parse(f'/pe "{long_prompt}"')
+
+        error_msg = str(exc_info.value).lower()
+        assert "too long" in error_msg or "maximum" in error_msg
+
+    def test_escaped_backslash_and_quote(self):
+        """Test that \\" is correctly parsed as escaped backslash and quote."""
+        parser = ParameterParser()
+
+        # Input: /pe "He said \\"Hello\\""
+        # Expected: He said \"Hello\"
+        result = parser.parse('/pe "He said \\\\\\"Hello\\\\\\""')
+
+        # Should have both backslashes and quotes
+        assert "\\" in result.prompt
+        assert '"' in result.prompt
+        assert 'He said' in result.prompt

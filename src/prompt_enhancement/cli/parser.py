@@ -35,6 +35,9 @@ VALID_OVERRIDE_OPTIONS = {
 # Valid flags
 VALID_FLAGS = {"override", "template", "type"}
 
+# Max prompt length (10,000 characters)
+MAX_PROMPT_LENGTH = 10000
+
 
 class ParameterParser:
     """Parser for `/pe` command parameters."""
@@ -122,8 +125,21 @@ class ParameterParser:
         if not prompt or prompt.strip() == "":
             raise ParseError('Prompt cannot be empty. Usage: /pe "your prompt here"')
 
-        # Get working directory
-        working_dir = os.getcwd()
+        # Validate prompt length
+        if len(prompt) > MAX_PROMPT_LENGTH:
+            raise ParseError(
+                f'Prompt too long ({len(prompt)} chars). '
+                f'Maximum {MAX_PROMPT_LENGTH} characters allowed.'
+            )
+
+        # Get working directory with error handling
+        try:
+            working_dir = os.getcwd()
+        except (OSError, FileNotFoundError) as e:
+            raise ParseError(
+                f"Unable to determine working directory: {e}. "
+                "Please ensure you're running this from a valid directory."
+            )
 
         return ParseResult(
             prompt=prompt,
@@ -215,11 +231,13 @@ class ParameterParser:
         # Remove outer quotes
         content = quoted_str[1:-1]
 
-        # Unescape sequences
+        # Unescape sequences in correct order: \\\\ must be handled first
+        # Use a temporary placeholder to avoid double-processing
+        content = content.replace('\\\\', '\x00')  # Temp placeholder for backslash
         content = content.replace('\\"', '"')
         content = content.replace('\\n', '\n')
         content = content.replace('\\t', '\t')
-        content = content.replace('\\\\', '\\')
+        content = content.replace('\x00', '\\')  # Restore backslash
 
         return content
 

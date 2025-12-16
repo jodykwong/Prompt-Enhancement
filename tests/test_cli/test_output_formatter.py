@@ -5,34 +5,8 @@ Tests result formatting, display-only mode, and terminal output.
 
 import pytest
 from src.prompt_enhancement.cli.output_formatter import (
-    OutputFormatter, ResultSection, FormattingError
+    OutputFormatter, FormattingError
 )
-
-
-class TestResultSection:
-    """Test ResultSection data structure."""
-
-    def test_section_creation(self):
-        """Create a ResultSection instance."""
-        section = ResultSection(
-            header="📝 Original Prompt",
-            content="Test prompt",
-            emoji="📝"
-        )
-
-        assert section.header == "📝 Original Prompt"
-        assert section.content == "Test prompt"
-        assert section.emoji == "📝"
-
-    def test_section_with_empty_content(self):
-        """ResultSection can have empty content."""
-        section = ResultSection(
-            header="Test Header",
-            content="",
-            emoji="✓"
-        )
-
-        assert section.content == ""
 
 
 class TestOutputFormatter:
@@ -216,6 +190,26 @@ class TestDisplayOnlyMode:
         formatter = OutputFormatter(display_only_mode=False)
 
         assert formatter.is_display_only_mode() is False
+
+    def test_display_only_mode_prevents_execution(self):
+        """AC2: Display-Only mode actually prevents execution."""
+        formatter = OutputFormatter(display_only_mode=True)
+
+        # Should raise error when trying to execute in Display-Only mode
+        with pytest.raises(FormattingError) as exc_info:
+            formatter.verify_mode_allows_execution()
+
+        assert "Display-Only mode" in str(exc_info.value)
+
+    def test_normal_mode_allows_execution(self):
+        """Normal mode allows execution without error."""
+        formatter = OutputFormatter(display_only_mode=False)
+
+        # Should not raise error in normal mode
+        try:
+            formatter.verify_mode_allows_execution()
+        except FormattingError:
+            pytest.fail("Normal mode should allow execution")
 
 
 class TestPlainTextOutput:

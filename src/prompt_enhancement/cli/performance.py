@@ -7,6 +7,7 @@ import time
 import hashlib
 import logging
 import os
+import threading
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Any
 
@@ -74,6 +75,36 @@ class TimeBudget:
     formatting_seconds: float
     cache_seconds: float
 
+    def __post_init__(self):
+        """Validate time budget allocation."""
+        # Check all values are non-negative
+        values = {
+            "total_seconds": self.total_seconds,
+            "analysis_seconds": self.analysis_seconds,
+            "standards_seconds": self.standards_seconds,
+            "llm_seconds": self.llm_seconds,
+            "formatting_seconds": self.formatting_seconds,
+            "cache_seconds": self.cache_seconds,
+        }
+
+        for name, value in values.items():
+            if value < 0:
+                raise ValueError(f"{name} cannot be negative: {value}")
+
+        # Check allocated time doesn't exceed total
+        allocated = (
+            self.analysis_seconds
+            + self.standards_seconds
+            + self.llm_seconds
+            + self.formatting_seconds
+            + self.cache_seconds
+        )
+
+        if allocated > self.total_seconds:
+            raise ValueError(
+                f"Allocated time ({allocated}s) exceeds total budget ({self.total_seconds}s)"
+            )
+
     def get_remaining_time(self) -> float:
         """
         Get remaining time buffer.
@@ -118,6 +149,7 @@ class PerformanceTracker:
         self.cache: Dict[str, tuple] = {}  # (value, expiry_time)
         self.cache_hit_flag = False
         self.cache_age_seconds: Optional[float] = None
+        self._cache_lock = threading.Lock()
 
         logger.debug("PerformanceTracker initialized")
 
@@ -225,7 +257,8 @@ class PerformanceTracker:
             ttl_seconds: Time to live in seconds
         """
         expiry_time = time.perf_counter() + ttl_seconds
-        self.cache[key] = (value, expiry_time)
+        with self._cache_lock:
+            self.cache[key] = (value, expiry_time)
         logger.debug(f"Cached: {key} (TTL: {ttl_seconds}s)")
 
     def get_cache(self, key: str) -> Optional[Any]:
@@ -238,17 +271,18 @@ class PerformanceTracker:
         Returns:
             Cached value or None if not found or expired
         """
-        if key not in self.cache:
-            logger.debug(f"Cache miss: {key}")
-            return None
+        with self._cache_lock:
+            if key not in self.cache:
+                logger.debug(f"Cache miss: {key}")
+                return None
 
-        value, expiry_time = self.cache[key]
+            value, expiry_time = self.cache[key]
 
-        # Check if expired
-        if time.perf_counter() > expiry_time:
-            del self.cache[key]
-            logger.debug(f"Cache expired: {key}")
-            return None
+            # Check if expired
+            if time.perf_counter() > expiry_time:
+                del self.cache[key]
+                logger.debug(f"Cache expired: {key}")
+                return None
 
         logger.debug(f"Cache hit: {key}")
         return value

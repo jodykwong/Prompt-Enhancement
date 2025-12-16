@@ -5,9 +5,10 @@ Handles progress display, phase transitions, and error reporting.
 
 import time
 import logging
+import asyncio
 from enum import Enum
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Callable
 
 
 # Configure logging
@@ -64,6 +65,8 @@ class ProgressTracker:
         self.current_progress_percent: float = 0.0
         self.error_message: Optional[str] = None
         self.is_error_state: bool = False
+        self._periodic_update_callback: Optional[Callable[[], None]] = None
+        self._periodic_update_interval: float = 0.5  # Update every 500ms
 
     def start_phase(self, phase: Phase) -> None:
         """
@@ -106,6 +109,37 @@ class ProgressTracker:
 
         if estimated_remaining_seconds is not None:
             self.estimated_remaining_seconds = estimated_remaining_seconds
+
+    async def update_progress_async(
+        self,
+        percent: Optional[float] = None,
+        estimated_remaining_seconds: Optional[float] = None,
+        callback: Optional[Callable[[], None]] = None
+    ) -> None:
+        """
+        Asynchronously update progress for current phase.
+
+        Allows non-blocking progress updates in async contexts.
+
+        Args:
+            percent: Progress percentage (0-100)
+            estimated_remaining_seconds: Estimated time remaining
+            callback: Optional callback to invoke after update
+        """
+        # Update progress in separate task to avoid blocking
+        await asyncio.get_event_loop().run_in_executor(
+            None,
+            self.update_progress,
+            percent,
+            estimated_remaining_seconds
+        )
+
+        # Invoke callback if provided
+        if callback:
+            if asyncio.iscoroutinefunction(callback):
+                await callback()
+            else:
+                callback()
 
     def complete_phase(self) -> None:
         """Mark the current phase as complete."""
@@ -201,18 +235,27 @@ class ProgressTracker:
         return " ".join(message_parts)
 
     def format_analyzing_message(self) -> str:
-        """Format analyzing phase message (AC1)."""
-        self.current_phase = Phase.ANALYZING
-        return self._format_message()
+        """
+        Format analyzing phase message (AC1).
+
+        Note: Does not modify phase state. Use start_phase(Phase.ANALYZING) first.
+        """
+        if self.current_phase == Phase.ANALYZING:
+            return self._format_message()
+        return f"{self.PHASE_EMOJI.get(Phase.ANALYZING, '')} {self.PHASE_DESCRIPTIONS.get(Phase.ANALYZING, '')}..."
 
     def format_enhancing_message(self) -> str:
-        """Format enhancing phase message (AC2)."""
-        self.current_phase = Phase.ENHANCING
-        return self._format_message()
+        """
+        Format enhancing phase message (AC2).
+
+        Note: Does not modify phase state. Use start_phase(Phase.ENHANCING) first.
+        """
+        if self.current_phase == Phase.ENHANCING:
+            return self._format_message()
+        return f"{self.PHASE_EMOJI.get(Phase.ENHANCING, '')} {self.PHASE_DESCRIPTIONS.get(Phase.ENHANCING, '')}..."
 
     def format_complete_message(self) -> str:
         """Format completion message (AC3)."""
-        self.current_phase = Phase.FORMATTING
         return "✓ Complete!"
 
     def format_error_message(
@@ -236,10 +279,33 @@ class ProgressTracker:
         return self.error_message or ""
 
     def clear_message(self) -> None:
-        """Clear current message (for terminal output handling)."""
-        # This would handle terminal escape sequences to clear lines
-        # For now, just a placeholder
-        pass
+        """
+        Clear current message from terminal.
+
+        Sends ANSI escape sequence to clear the current line.
+        This is used for real-time progress updates that overwrite themselves.
+        """
+        # ANSI escape sequence to clear current line and move cursor to beginning
+        print("\r" + " " * 80 + "\r", end="", flush=True)
+
+    def set_periodic_update_callback(
+        self,
+        callback: Optional[Callable[[], None]],
+        interval: float = 0.5
+    ) -> None:
+        """
+        Register a callback for periodic progress updates.
+
+        This allows external code to receive periodic notifications
+        of progress updates without blocking.
+
+        Args:
+            callback: Callable to invoke periodically, or None to disable
+            interval: Time interval in seconds between updates (default 0.5s)
+        """
+        self._periodic_update_callback = callback
+        self._periodic_update_interval = interval
+        logger.debug(f"Periodic update callback registered with {interval}s interval")
 
     def should_show_long_duration_update(self) -> bool:
         """

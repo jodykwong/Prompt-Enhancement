@@ -7,6 +7,7 @@ import os
 import logging
 from typing import Dict, Any
 from .parser import ParameterParser, ParseError
+from .performance import PerformanceTracker, TimeBudget
 
 
 # Configure logging
@@ -26,6 +27,17 @@ class PeCommand:
     def __init__(self):
         """Initialize the PE command handler."""
         self.parser = ParameterParser()
+        self.performance_tracker = PerformanceTracker()
+        # Set default time budget (5-15 second target)
+        self.time_budget = TimeBudget(
+            total_seconds=15,
+            analysis_seconds=5,
+            standards_seconds=2,
+            llm_seconds=5,
+            formatting_seconds=1,
+            cache_seconds=1
+        )
+        self.performance_tracker.set_budget(self.time_budget)
 
     def execute(self, command_string: str) -> Dict[str, Any]:
         """
@@ -35,14 +47,25 @@ class PeCommand:
             command_string: The full command string from Claude Code
 
         Returns:
-            Dictionary with status, prompt, working_dir, overrides, and acknowledgment
+            Dictionary with status, prompt, working_dir, overrides, acknowledgment, and performance metrics
         """
+        # Reset tracker for new execution
+        self.performance_tracker = PerformanceTracker()
+        self.performance_tracker.set_budget(self.time_budget)
+
         try:
+            # Track command parsing
+            self.performance_tracker.start_phase("command_parsing")
+
             # Parse the command
             parse_result = self.parser.parse(command_string)
+            self.performance_tracker.end_phase("command_parsing")
 
             # Build acknowledgment
             acknowledgment = self._build_acknowledgment(parse_result.prompt)
+
+            # Get performance metrics
+            metrics = self.performance_tracker.get_metrics()
 
             # Return success result
             return {
@@ -52,14 +75,19 @@ class PeCommand:
                 "overrides": parse_result.overrides,
                 "acknowledgment": acknowledgment,
                 "error_code": None,
+                "performance": {
+                    "total_execution_time": metrics.total_execution_time,
+                    "phase_times": metrics.phase_times,
+                    "cache_hit": metrics.cache_hit,
+                },
             }
 
         except ParseError as e:
             # Handle parse errors
             return self._handle_parse_error(str(e))
-        except Exception as e:
-            # Unexpected errors
-            logger.error(f"Unexpected error in PeCommand.execute: {e}")
+        except (ValueError, TypeError, AttributeError) as e:
+            # Specific error handling instead of catching all exceptions
+            logger.error(f"Error in PeCommand.execute: {e}", exc_info=True)
             return {
                 "status": "error",
                 "message": "An unexpected error occurred while processing your command.",

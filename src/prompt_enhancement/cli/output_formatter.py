@@ -17,14 +17,6 @@ class FormattingError(Exception):
     pass
 
 
-@dataclass
-class ResultSection:
-    """A formatted result section with header, content, and emoji."""
-    header: str
-    content: str
-    emoji: str
-
-
 class OutputFormatter:
     """Formats and displays enhancement results."""
 
@@ -65,6 +57,20 @@ class OutputFormatter:
     def is_display_only_mode(self) -> bool:
         """Check if Display-Only mode is active."""
         return self.display_only_mode
+
+    def verify_mode_allows_execution(self) -> None:
+        """
+        Verify that execution is allowed in current mode.
+
+        Raises:
+            FormattingError: If Display-Only mode prevents execution
+        """
+        if self.display_only_mode:
+            raise FormattingError(
+                "Cannot execute result in Display-Only mode. "
+                "Review the formatted result and manually decide how to proceed. "
+                "Copy the enhanced prompt and use it in a new request if desired."
+            )
 
     def get_mode_indicator(self) -> str:
         """
