@@ -37,7 +37,7 @@ epic-1: in-progress
 1-1-execute-pe-command-with-basic-parameter-parsing: review
 1-2-display-real-time-progress-messages: review
 1-3-format-and-display-results-in-display-only-mode: review
-1-4-implement-5-15-second-performance-target: backlog
+1-4-implement-5-15-second-performance-target: review
 epic-1-retrospective: optional
 
 # ============================================================================
@@ -106,9 +106,9 @@ summary:
   epics_in_progress: 1
   stories_backlog: 24
   stories_drafted: 0
-  stories_ready_for_dev: 1
+  stories_ready_for_dev: 0
   stories_in_progress: 0
-  stories_review: 3
+  stories_review: 4
   stories_done: 0
 
 # ============================================================================
