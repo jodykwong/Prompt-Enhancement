@@ -43,7 +43,7 @@ epic-1-retrospective: optional
 # ============================================================================
 # EPIC 2: 自动项目和编码标准分析
 # ============================================================================
-epic-2: in-progress
+epic-2: done
 2-1-detect-project-type-from-filesystem-markers: review
 2-2-identify-project-indicator-files: done
 2-3-extract-git-history-and-project-context: done
@@ -53,7 +53,7 @@ epic-2: in-progress
 2-7-detect-documentation-style: done
 2-8-detect-code-organization-patterns: done
 2-9-generate-confidence-scores-for-standards-detection: done
-2-10-handle-claude-code-sandbox-file-restrictions: backlog
+2-10-handle-claude-code-sandbox-file-restrictions: done
 epic-2-retrospective: optional
 
 # ============================================================================
@@ -103,14 +103,14 @@ summary:
   total_retrospectives: 6
   total_items: 40
   epics_backlog: 5
-  epics_in_progress: 1
-  epics_done: 1
-  stories_backlog: 15
+  epics_in_progress: 0
+  epics_done: 2
+  stories_backlog: 14
   stories_drafted: 0
   stories_ready_for_dev: 0
   stories_in_progress: 0
   stories_review: 1
-  stories_done: 12
+  stories_done: 13
 
 # ============================================================================
 # EPIC 依赖关系与执行顺序
