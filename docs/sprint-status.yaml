@@ -52,7 +52,7 @@ epic-2: in-progress
 2-6-detect-test-framework: done
 2-7-detect-documentation-style: done
 2-8-detect-code-organization-patterns: done
-2-9-generate-confidence-scores-for-standards-detection: backlog
+2-9-generate-confidence-scores-for-standards-detection: done
 2-10-handle-claude-code-sandbox-file-restrictions: backlog
 epic-2-retrospective: optional
 
@@ -105,12 +105,12 @@ summary:
   epics_backlog: 5
   epics_in_progress: 1
   epics_done: 1
-  stories_backlog: 19
+  stories_backlog: 15
   stories_drafted: 0
-  stories_ready_for_dev: 2
+  stories_ready_for_dev: 0
   stories_in_progress: 0
   stories_review: 1
-  stories_done: 7
+  stories_done: 12
 
 # ============================================================================
 # EPIC 依赖关系与执行顺序
