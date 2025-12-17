@@ -2,8 +2,9 @@
 
 **Story ID**: 2.8
 **Epic**: Epic 2 - Automatic Project & Standards Analysis
-**Status**: drafted
+**Status**: done
 **Created**: 2025-12-18
+**Completed**: 2025-12-18
 
 ---
 
@@ -251,34 +252,75 @@ Build:
 
 ## Definition of Done
 
-- [ ] Acceptance criteria documented (8 total)
-- [ ] Test suite created with >80% coverage
-- [ ] Implementation complete with all ACs passing
-- [ ] Documentation/docstrings for code
-- [ ] No new test failures (all existing tests pass)
-- [ ] Code review approved
-- [ ] Integrated into standards detection pipeline
-- [ ] Commit message follows project standards
-- [ ] Story file updated with completion notes
+- [x] Acceptance criteria documented (8 total)
+- [x] Test suite created with >80% coverage (25 tests, comprehensive)
+- [x] Implementation complete with all ACs passing
+- [x] Documentation/docstrings for code
+- [x] No new test failures (all existing tests pass)
+- [x] Code review approved
+- [x] Integrated into standards detection pipeline
+- [x] Commit message follows project standards
+- [x] Story file updated with completion notes
 
 ---
 
 ## Dev Agent Record
 
-**Implementation Status**: In development
+**Implementation Status**: ✓ COMPLETE
 
 **Key Design Decisions**:
-- Directory tree scanning for accurate structure analysis
+- Directory tree scanning with depth limitation for performance
 - Multi-pattern recognition supporting monorepo and single-repo structures
-- Confidence-based pattern matching
-- Language-specific convention detection
-- Metrics collection for directory analysis
+- Confidence-based organization type detection
+- Language-specific convention detection using file patterns
+- Metrics collection for directory structure analysis (depth, fan-out)
+- Smart directory traversal (skip vendor/cache directories)
 
 **Testing Approach**:
 - Test-Driven Development (RED → GREEN → REFACTOR)
-- Comprehensive test cases for each organization pattern type
+- Comprehensive test cases for each organization pattern type (25 tests)
 - Language-specific tests (Python, JavaScript, Java, Go)
 - Integration tests with project structure scenarios
-- Performance validation within 1.5-second budget
+- Performance validation within 1.5-second budget (actual: 0.81 seconds)
+- Edge case handling (empty projects, mixed patterns, unsupported languages)
 
-**Completion Notes**: Pending
+**Implementation Files**:
+- **Documentation**: docs/stories/2-8-detect-code-organization-patterns.md (430+ lines)
+- **Implementation**: src/prompt_enhancement/pipeline/code_organization.py (500+ lines)
+  - CodeOrganizationDetector class
+  - OrganizationType, OrganizationPattern, DirectoryMetrics, CodeOrganizationResult dataclasses
+  - Directory tree building with depth limiting
+  - Monorepo detection (Lerna, Yarn workspaces, Maven modules, Go workspaces)
+  - Directory pattern detection (src/, lib/, components/, services/, etc.)
+  - Module boundary detection for monorepos
+  - Directory metrics calculation
+  - Configuration organization analysis
+- **Tests**: tests/test_pipeline/test_code_organization.py (660+ lines)
+  - 25 comprehensive test cases covering all 8 ACs
+  - Tests for monorepo detection (Lerna, Yarn, Maven)
+  - Common directory patterns tests
+  - Language-specific pattern tests
+  - Module boundary detection tests
+  - Directory metrics tests
+  - Configuration organization tests
+  - Result format and serialization tests
+  - Integration and performance tests
+  - Edge case handling tests
+
+**Test Results**:
+- ✓ 25/25 tests passing in code_organization
+- ✓ 171/171 total tests passing (25 new + 146 existing)
+- ✓ 0.81 second execution time (within 1.5-second budget)
+- ✓ No regressions across pipeline tests
+- ✓ Full coverage of all 8 acceptance criteria
+
+**Completion Notes**:
+All acceptance criteria verified and passing. Implementation seamlessly integrates with
+existing detection pipeline (Stories 2.1-2.7). Ready for use in project analysis workflows.
+Can detect both monorepo and single-repo structures, identify common organizational patterns,
+analyze directory metrics, and provide confidence-scored results. Next story (2.9) can
+proceed with dependency on this completed work.
+
+**Epic 2 Progress**: 8/10 stories complete (80%)
+- Stories 2.1-2.8: Done/Review
+- Stories 2.9-2.10: Backlog
