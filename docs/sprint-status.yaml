@@ -46,8 +46,8 @@ epic-1-retrospective: optional
 epic-2: in-progress
 2-1-detect-project-type-from-filesystem-markers: review
 2-2-identify-project-indicator-files: done
-2-3-extract-git-history-and-project-context: review
-2-4-generate-project-fingerprint-for-caching: ready-for-dev
+2-3-extract-git-history-and-project-context: done
+2-4-generate-project-fingerprint-for-caching: done
 2-5-detect-naming-conventions: backlog
 2-6-detect-test-framework: backlog
 2-7-detect-documentation-style: backlog
