@@ -429,3 +429,207 @@ class TestOutputFormatterEdgeCases:
         )
 
         assert isinstance(output, str)
+
+
+class TestInputValidation:
+    """Test suite for input validation (MEDIUM-5 fix)."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.formatter = OutputFormatter(display_only_mode=True)
+
+    def test_format_original_prompt_with_none(self):
+        """Handle None input for original prompt."""
+        formatted = self.formatter.format_original_prompt(None)
+
+        assert "No prompt provided" in formatted
+
+    def test_format_original_prompt_with_empty_string(self):
+        """Handle empty string input for original prompt."""
+        formatted = self.formatter.format_original_prompt("")
+
+        assert "Empty prompt" in formatted
+
+    def test_format_enhanced_prompt_with_none(self):
+        """Handle None input for enhanced prompt."""
+        formatted = self.formatter.format_enhanced_prompt(None)
+
+        assert "No enhanced prompt" in formatted
+
+    def test_format_enhanced_prompt_with_empty_string(self):
+        """Handle empty string input for enhanced prompt."""
+        formatted = self.formatter.format_enhanced_prompt("")
+
+        assert "Empty enhanced prompt" in formatted
+
+    def test_format_steps_with_none(self):
+        """Handle None input for implementation steps."""
+        formatted = self.formatter.format_implementation_steps(None)
+
+        assert "No steps provided" in formatted
+
+    def test_format_steps_with_empty_list(self):
+        """Handle empty list for implementation steps."""
+        formatted = self.formatter.format_implementation_steps([])
+
+        assert "No steps provided" in formatted
+
+    def test_format_steps_with_none_step_in_list(self):
+        """Handle None element in steps list."""
+        formatted = self.formatter.format_implementation_steps(["Step 1", None, "Step 3"])
+
+        assert "Step 1" in formatted
+        assert "Empty step" in formatted
+        assert "Step 3" in formatted
+
+    def test_format_original_prompt_with_invalid_type(self):
+        """Reject invalid type for original prompt."""
+        with pytest.raises(FormattingError) as exc_info:
+            self.formatter.format_original_prompt(123)
+
+        assert "must be str" in str(exc_info.value)
+
+    def test_format_steps_with_invalid_type(self):
+        """Reject invalid type for steps."""
+        with pytest.raises(FormattingError) as exc_info:
+            self.formatter.format_implementation_steps("not a list")
+
+        assert "must be list" in str(exc_info.value)
+
+
+class TestLargeIndentation:
+    """Test suite for large indentation handling (HIGH-2 fix)."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.formatter = OutputFormatter(display_only_mode=True, terminal_width=20)
+
+    def test_wrap_text_with_large_indentation(self):
+        """Handle indentation larger than terminal width."""
+        # 28 spaces + content, but terminal width is only 20
+        text = "                            code content here"
+
+        # Should not crash
+        wrapped = self.formatter.wrap_text(text, width=20, preserve_indentation=True)
+
+        assert isinstance(wrapped, str)
+        assert len(wrapped) > 0
+
+    def test_wrap_text_with_indentation_equal_to_width(self):
+        """Handle indentation equal to terminal width."""
+        text = " " * 20 + "code"
+
+        wrapped = self.formatter.wrap_text(text, width=20, preserve_indentation=True)
+
+        assert isinstance(wrapped, str)
+
+    def test_wrap_text_with_normal_indentation(self):
+        """Normal indentation still works correctly."""
+        text = "    def example():\n        return True"
+
+        wrapped = self.formatter.wrap_text(text, width=40, preserve_indentation=True)
+
+        lines = wrapped.split("\n")
+        assert lines[0].startswith("    ")
+        assert lines[1].startswith("        ")
+
+
+class TestParagraphSplitting:
+    """Test suite for paragraph splitting (MEDIUM-6 fix)."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.formatter = OutputFormatter(display_only_mode=True)
+
+    def test_split_paragraphs_with_multiple_newlines(self):
+        """Handle multiple consecutive newlines."""
+        text = "Paragraph 1\n\n\nParagraph 2"
+
+        wrapped = self.formatter.wrap_text(text, width=80)
+
+        assert "Paragraph 1" in wrapped
+        assert "Paragraph 2" in wrapped
+
+    def test_split_paragraphs_with_whitespace(self):
+        """Handle newlines with whitespace between."""
+        text = "Paragraph 1\n \n Paragraph 2"
+
+        wrapped = self.formatter.wrap_text(text, width=80)
+
+        assert "Paragraph 1" in wrapped
+        assert "Paragraph 2" in wrapped
+
+    def test_handle_windows_line_endings(self):
+        """Normalize Windows line endings."""
+        text = "Line 1\r\n\r\nLine 2"
+
+        wrapped = self.formatter.wrap_text(text, width=80)
+
+        # Should handle Windows line endings
+        assert "Line 1" in wrapped
+        assert "Line 2" in wrapped
+
+
+class TestDisplayResultMethod:
+    """Test suite for display_result method (MEDIUM-3 fix)."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.formatter = OutputFormatter(display_only_mode=True)
+
+    def test_display_result_method_exists(self):
+        """display_result method is available."""
+        assert hasattr(self.formatter, 'display_result')
+        assert callable(self.formatter.display_result)
+
+    def test_display_result_formats_and_displays(self, capsys):
+        """display_result formats and outputs to terminal."""
+        self.formatter.display_result(
+            original_prompt="Test prompt",
+            enhanced_prompt="Enhanced test",
+            implementation_steps=["Step 1", "Step 2"]
+        )
+
+        captured = capsys.readouterr()
+        assert "Test prompt" in captured.out
+        assert "Enhanced test" in captured.out
+        assert "Step 1" in captured.out
+
+
+class TestPerformanceRequirements:
+    """Test suite for performance requirements (MEDIUM-4 fix)."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.formatter = OutputFormatter(display_only_mode=True)
+
+    def test_format_complete_result_under_1_second(self):
+        """Complete result formatting completes in <1 second."""
+        import time
+
+        # Large input
+        original = "Test prompt " * 100
+        enhanced = "Enhanced prompt " * 100
+        steps = [f"Step {i}" for i in range(50)]
+
+        start = time.perf_counter()
+        for _ in range(10):
+            self.formatter.format_complete_result(original, enhanced, steps)
+        elapsed = time.perf_counter() - start
+
+        # 10 formats should complete in <1 second
+        assert elapsed < 1.0, f"10 formats took {elapsed:.2f}s, expected <1s"
+
+    def test_text_wrapping_performance(self):
+        """Text wrapping is fast."""
+        import time
+
+        text = "a" * 1000
+
+        start = time.perf_counter()
+        for _ in range(100):
+            self.formatter.wrap_text(text, width=80)
+        elapsed = time.perf_counter() - start
+
+        # 100 wraps should be very fast (<100ms)
+        assert elapsed < 0.1, f"100 wraps took {elapsed*1000:.2f}ms, expected <100ms"

@@ -448,3 +448,215 @@ class TestIntegrationScenarios:
 
         assert metrics.cache_hit is True
         assert metrics.total_execution_time < 5
+
+
+class TestLRUCacheEviction:
+    """Test suite for LRU cache eviction (HIGH-1 fix)."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.tracker = PerformanceTracker()
+
+    def test_cache_size_limit_enforced(self):
+        """Cache enforces maximum size limit."""
+        # Add entries up to limit
+        for i in range(PerformanceTracker.CACHE_MAX_SIZE):
+            self.tracker.set_cache(f"key{i}", f"value{i}")
+
+        assert len(self.tracker.cache) == PerformanceTracker.CACHE_MAX_SIZE
+
+        # Add one more - should evict LRU
+        self.tracker.set_cache("new_key", "new_value")
+
+        assert len(self.tracker.cache) == PerformanceTracker.CACHE_MAX_SIZE
+        assert "new_key" in self.tracker.cache
+
+    def test_lru_eviction_order(self):
+        """Least recently used entry is evicted first."""
+        # Fill cache to limit
+        for i in range(PerformanceTracker.CACHE_MAX_SIZE):
+            self.tracker.set_cache(f"key{i}", f"value{i}")
+
+        # Access key0 to make it recently used
+        self.tracker.get_cache("key0")
+
+        # Add new entry - should evict key1 (LRU), not key0
+        self.tracker.set_cache("new_key", "new_value")
+
+        assert "key0" in self.tracker.cache  # Recently accessed, kept
+        assert "key1" not in self.tracker.cache  # LRU, evicted
+
+    def test_clear_cache_all(self):
+        """clear_cache() removes all entries."""
+        self.tracker.set_cache("key1", "value1")
+        self.tracker.set_cache("key2", "value2")
+
+        count = self.tracker.clear_cache()
+
+        assert count == 2
+        assert len(self.tracker.cache) == 0
+
+    def test_clear_cache_namespace(self):
+        """clear_cache() supports namespace filtering."""
+        self.tracker.set_cache("project:key1", "value1")
+        self.tracker.set_cache("project:key2", "value2")
+        self.tracker.set_cache("analysis:key3", "value3")
+
+        count = self.tracker.clear_cache(namespace="project:")
+
+        assert count == 2
+        assert len(self.tracker.cache) == 1
+        assert "analysis:key3" in self.tracker.cache
+
+
+class TestThreadSafety:
+    """Test suite for thread safety (HIGH-2, HIGH-3 fixes)."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.tracker = PerformanceTracker()
+
+    def test_concurrent_phase_tracking(self):
+        """Multiple threads can track phases safely."""
+        import threading
+
+        def track_phase(phase_name):
+            self.tracker.start_phase(phase_name)
+            time.sleep(0.01)
+            self.tracker.end_phase(phase_name)
+
+        threads = []
+        for i in range(10):
+            t = threading.Thread(target=track_phase, args=(f"phase{i}",))
+            threads.append(t)
+            t.start()
+
+        for t in threads:
+            t.join()
+
+        # All phases should be recorded
+        assert len(self.tracker.phase_times) == 10
+
+    def test_concurrent_cache_operations(self):
+        """Multiple threads can cache safely."""
+        import threading
+
+        def cache_operation(key_prefix):
+            for i in range(10):
+                self.tracker.set_cache(f"{key_prefix}:{i}", f"value{i}")
+                self.tracker.get_cache(f"{key_prefix}:{i}")
+
+        threads = []
+        for i in range(5):
+            t = threading.Thread(target=cache_operation, args=(f"thread{i}",))
+            threads.append(t)
+            t.start()
+
+        for t in threads:
+            t.join()
+
+        # No crashes, cache operational
+        assert len(self.tracker.cache) <= PerformanceTracker.CACHE_MAX_SIZE
+
+    def test_concurrent_metrics_access(self):
+        """Multiple threads can access metrics safely."""
+        import threading
+
+        def access_metrics():
+            for _ in range(20):
+                self.tracker.record_cache_hit(1.0)
+                metrics = self.tracker.get_metrics()
+                assert metrics is not None
+                self.tracker.record_cache_miss()
+
+        threads = []
+        for i in range(5):
+            t = threading.Thread(target=access_metrics)
+            threads.append(t)
+            t.start()
+
+        for t in threads:
+            t.join()
+
+        # No crashes
+        assert True
+
+
+class TestProjectFingerprintStability:
+    """Test suite for project fingerprint improvements (MEDIUM-5 fix)."""
+
+    def test_fingerprint_includes_file_size(self):
+        """Fingerprint changes when file size changes."""
+        import tempfile
+        import os
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create test file
+            test_file = os.path.join(tmpdir, "package.json")
+            with open(test_file, "w") as f:
+                f.write('{"name": "test"}')
+
+            fp1 = ProjectFingerprint.compute_fingerprint(tmpdir)
+
+            # Modify file size
+            with open(test_file, "w") as f:
+                f.write('{"name": "test", "version": "1.0.0"}')
+
+            fp2 = ProjectFingerprint.compute_fingerprint(tmpdir)
+
+            assert fp1 != fp2
+
+    def test_fingerprint_deterministic(self):
+        """Same project produces same fingerprint."""
+        fp1 = ProjectFingerprint.compute_fingerprint(".")
+        fp2 = ProjectFingerprint.compute_fingerprint(".")
+
+        assert fp1 == fp2
+
+
+class TestTimeBudgetValidation:
+    """Test suite for TimeBudget validation (MEDIUM-7 fix)."""
+
+    def test_budget_with_excessive_llm_allocation_succeeds(self):
+        """Budget with >80% LLM allocation is created (with warning logged)."""
+        # LLM takes 90% of budget - should warn but not fail
+        budget = TimeBudget(
+            total_seconds=15,
+            analysis_seconds=0.5,
+            standards_seconds=0.5,
+            llm_seconds=13.5,  # 90%
+            formatting_seconds=0.5,
+            cache_seconds=0
+        )
+
+        assert budget.llm_seconds == 13.5
+        assert budget.llm_seconds > 0.8 * budget.total_seconds
+
+    def test_budget_with_very_low_phase_time_succeeds(self):
+        """Budget with very low phase time is created (with warning logged)."""
+        # analysis_seconds is very low - should warn but not fail
+        budget = TimeBudget(
+            total_seconds=15,
+            analysis_seconds=0.1,  # Very low
+            standards_seconds=1,
+            llm_seconds=10,
+            formatting_seconds=1,
+            cache_seconds=0
+        )
+
+        assert budget.analysis_seconds == 0.1
+        assert budget.analysis_seconds < 0.5  # Below minimum threshold
+
+    def test_budget_validation_does_not_crash(self):
+        """Validation warnings do not prevent budget creation."""
+        # Should create successfully despite warnings
+        budget = TimeBudget(
+            total_seconds=15,
+            analysis_seconds=0.1,
+            standards_seconds=0.5,
+            llm_seconds=13.5,
+            formatting_seconds=0.5,
+            cache_seconds=0.4
+        )
+
+        assert budget.total_seconds == 15

@@ -56,6 +56,13 @@ class ProgressTracker:
         Phase.ERROR: "Error occurred",
     }
 
+    # Default recovery strategies for common errors (AC5)
+    DEFAULT_RECOVERY_STRATEGIES = {
+        Phase.ANALYZING: "Falling back to basic analysis. Processing will continue...",
+        Phase.ENHANCING: "Using cached enhancement or basic fallback...",
+        Phase.FORMATTING: "Some features may be unavailable in output.",
+    }
+
     def __init__(self):
         """Initialize the progress tracker."""
         self.current_phase: Optional[Phase] = None
@@ -158,7 +165,7 @@ class ProgressTracker:
         Args:
             phase: Phase where error occurred
             error_description: Description of the error
-            recovery_guidance: Optional guidance for recovery
+            recovery_guidance: Optional guidance for recovery. If None, uses default strategy.
         """
         self.current_phase = Phase.ERROR
         self.is_error_state = True
@@ -168,8 +175,11 @@ class ProgressTracker:
             f"❌ {Phase(phase).name.capitalize()} failed: {error_description}"
         ]
 
+        # Use provided recovery guidance or default strategy
         if recovery_guidance:
             error_parts.append(f"   Recovery: {recovery_guidance}")
+        elif phase in self.DEFAULT_RECOVERY_STRATEGIES:
+            error_parts.append(f"   Recovery: {self.DEFAULT_RECOVERY_STRATEGIES[phase]}")
 
         self.error_message = "\n".join(error_parts)
 
@@ -282,11 +292,11 @@ class ProgressTracker:
         """
         Clear current message from terminal.
 
-        Sends ANSI escape sequence to clear the current line.
-        This is used for real-time progress updates that overwrite themselves.
+        Prints a newline to move to next line instead of using ANSI codes.
+        This ensures compatibility with Claude Code terminal environment.
         """
-        # ANSI escape sequence to clear current line and move cursor to beginning
-        print("\r" + " " * 80 + "\r", end="", flush=True)
+        # Use newline instead of ANSI escape sequences for Claude Code compatibility
+        print(flush=True)
 
     def set_periodic_update_callback(
         self,
@@ -315,3 +325,36 @@ class ProgressTracker:
             True if phase has lasted >3 seconds
         """
         return self.elapsed_seconds > 3.0
+
+    async def run_periodic_updates(self, update_interval: float = 2.0) -> None:
+        """
+        Run periodic progress updates for long-running operations (AC4).
+
+        This method creates an async loop that updates progress every
+        `update_interval` seconds until the phase is complete or an error occurs.
+
+        Args:
+            update_interval: Time in seconds between updates (default 2.0s)
+
+        Example:
+            >>> tracker = ProgressTracker()
+            >>> tracker.start_phase(Phase.ENHANCING)
+            >>> # Run periodic updates in background
+            >>> asyncio.create_task(tracker.run_periodic_updates())
+        """
+        while self.current_phase and not self.is_error_state:
+            await asyncio.sleep(update_interval)
+
+            # Update elapsed time
+            self.update_progress()
+
+            # Invoke callback if registered
+            if self._periodic_update_callback:
+                if asyncio.iscoroutinefunction(self._periodic_update_callback):
+                    await self._periodic_update_callback()
+                else:
+                    self._periodic_update_callback()
+
+            # Stop if phase is no longer active
+            if self.current_phase is None:
+                break

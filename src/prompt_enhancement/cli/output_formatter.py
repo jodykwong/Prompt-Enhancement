@@ -4,6 +4,7 @@ Handles result formatting, terminal output, and Display-Only mode.
 """
 
 import logging
+import re
 import textwrap
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
@@ -60,10 +61,18 @@ class OutputFormatter:
 
     def verify_mode_allows_execution(self) -> None:
         """
-        Verify that execution is allowed in current mode.
+        Verify that execution is allowed in current mode (HIGH-1 fix).
+
+        This method should be called before automatically executing any
+        enhancement result to ensure Display-Only mode is respected.
 
         Raises:
             FormattingError: If Display-Only mode prevents execution
+
+        Example:
+            >>> formatter = OutputFormatter(display_only_mode=True)
+            >>> formatter.verify_mode_allows_execution()  # Raises error
+            >>> # User must manually copy and use the enhanced prompt
         """
         if self.display_only_mode:
             raise FormattingError(
@@ -119,10 +128,19 @@ class OutputFormatter:
                     # Get the content without indentation
                     content = line.lstrip()
 
+                    # Handle case where indentation exceeds width (HIGH-2 fix)
+                    available_width = max(1, width - leading_spaces)
+
+                    # If indentation is too large, truncate it
+                    if leading_spaces >= width:
+                        logger.warning(f"Indentation ({leading_spaces} spaces) exceeds terminal width ({width}). Truncating.")
+                        indent = " " * (width - 10)  # Leave 10 chars for content
+                        available_width = 10
+
                     # Wrap the content
                     wrapped_content = textwrap.fill(
                         content,
-                        width=width - leading_spaces,
+                        width=available_width,
                         break_long_words=True,
                         break_on_hyphens=False
                     )
@@ -133,11 +151,19 @@ class OutputFormatter:
 
             return "\n".join(wrapped_lines)
         else:
+            # Normalize line endings for cross-platform compatibility (MEDIUM-6 fix)
+            text = text.replace('\r\n', '\n')
+
             # Handle paragraphs (preserve multiple newlines)
-            paragraphs = text.split("\n\n")
+            # Use regex to split on 2+ newlines with optional whitespace (MEDIUM-6 fix)
+            paragraphs = re.split(r'\n\s*\n', text)
             wrapped_paragraphs = []
 
             for paragraph in paragraphs:
+                # Skip empty paragraphs
+                if not paragraph.strip():
+                    continue
+
                 # Wrap each paragraph
                 wrapped = textwrap.fill(
                     paragraph,
@@ -183,8 +209,16 @@ class OutputFormatter:
         emoji = self.PHASE_EMOJI["original"]
         header = self.PHASE_DESCRIPTIONS["original"]
 
-        # Wrap the prompt text
-        wrapped_content = self.wrap_text(prompt_text, self.terminal_width)
+        # Input validation (MEDIUM-5 fix)
+        if prompt_text is None:
+            wrapped_content = "(No prompt provided)"
+        elif not isinstance(prompt_text, str):
+            raise FormattingError(f"prompt_text must be str, got {type(prompt_text).__name__}")
+        elif not prompt_text.strip():
+            wrapped_content = "(Empty prompt)"
+        else:
+            # Wrap the prompt text
+            wrapped_content = self.wrap_text(prompt_text, self.terminal_width)
 
         return self._format_section(emoji, header, wrapped_content)
 
@@ -201,8 +235,16 @@ class OutputFormatter:
         emoji = self.PHASE_EMOJI["enhanced"]
         header = self.PHASE_DESCRIPTIONS["enhanced"]
 
-        # Wrap the enhanced text
-        wrapped_content = self.wrap_text(enhanced_text, self.terminal_width)
+        # Input validation (MEDIUM-5 fix)
+        if enhanced_text is None:
+            wrapped_content = "(No enhanced prompt generated)"
+        elif not isinstance(enhanced_text, str):
+            raise FormattingError(f"enhanced_text must be str, got {type(enhanced_text).__name__}")
+        elif not enhanced_text.strip():
+            wrapped_content = "(Empty enhanced prompt)"
+        else:
+            # Wrap the enhanced text
+            wrapped_content = self.wrap_text(enhanced_text, self.terminal_width)
 
         return self._format_section(emoji, header, wrapped_content)
 
@@ -219,13 +261,23 @@ class OutputFormatter:
         emoji = self.PHASE_EMOJI["steps"]
         header = self.PHASE_DESCRIPTIONS["steps"]
 
-        # Format steps as numbered list
-        if not steps:
+        # Input validation (MEDIUM-5 fix)
+        if steps is None:
+            content = "(No steps provided)"
+        elif not isinstance(steps, list):
+            raise FormattingError(f"steps must be list, got {type(steps).__name__}")
+        elif not steps:
             content = "(No steps provided)"
         else:
+            # Format steps as numbered list
             step_lines = []
             for i, step in enumerate(steps, 1):
-                step_lines.append(f"{i}. {step}")
+                if step is None:
+                    step_lines.append(f"{i}. (Empty step)")
+                elif not isinstance(step, str):
+                    raise FormattingError(f"Step {i} must be str, got {type(step).__name__}")
+                else:
+                    step_lines.append(f"{i}. {step}")
             content = "\n".join(step_lines)
 
         return self._format_section(emoji, header, content)
@@ -279,6 +331,14 @@ class OutputFormatter:
         """
         Format complete result with all sections (AC1-AC5).
 
+        Note on Display-Only mode (HIGH-1 fix):
+            This method formats results but does NOT enforce Display-Only mode.
+            Callers who want to auto-execute results should call
+            verify_mode_allows_execution() first to respect the mode setting.
+
+            Display-Only mode is indicated in the output but not enforced here,
+            as formatting and display are separate from execution.
+
         Args:
             original_prompt: Original prompt text
             enhanced_prompt: Enhanced prompt text
@@ -318,3 +378,38 @@ class OutputFormatter:
         logger.info(f"Complete result formatted (display_only_mode={self.display_only_mode})")
 
         return result
+
+    def display_result(
+        self,
+        original_prompt: str,
+        enhanced_prompt: str,
+        implementation_steps: List[str],
+        detected_standards: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """
+        Format and display complete result to terminal (MEDIUM-3 fix).
+
+        This method handles both formatting and output, providing a complete
+        display workflow.
+
+        Args:
+            original_prompt: Original prompt text
+            enhanced_prompt: Enhanced prompt text
+            implementation_steps: List of implementation steps
+            detected_standards: Detected standards data
+
+        Raises:
+            FormattingError: If Display-Only mode prevents execution
+        """
+        # Format the result
+        result = self.format_complete_result(
+            original_prompt,
+            enhanced_prompt,
+            implementation_steps,
+            detected_standards
+        )
+
+        # Display to terminal
+        print(result, flush=True)
+
+        logger.info("Result displayed to terminal")

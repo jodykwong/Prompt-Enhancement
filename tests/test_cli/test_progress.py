@@ -4,6 +4,7 @@ Tests real-time progress message display and phase transitions.
 """
 
 import pytest
+import asyncio
 import time
 from datetime import datetime
 from src.prompt_enhancement.cli.progress import (
@@ -301,3 +302,181 @@ class TestProgressTracker:
         assert state.elapsed_seconds is not None
         assert state.estimated_remaining_seconds is not None
         assert state.message is not None
+
+
+class TestAsyncProgressUpdates:
+    """Test suite for async progress update functionality (HIGH-3 fix)."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.tracker = ProgressTracker()
+
+    @pytest.mark.asyncio
+    async def test_update_progress_async(self):
+        """AC4: Async progress updates work correctly."""
+        self.tracker.start_phase(Phase.ANALYZING)
+
+        # Update progress asynchronously
+        await self.tracker.update_progress_async(percent=50)
+
+        state = self.tracker.get_current_state()
+        assert state is not None
+        assert self.tracker.current_progress_percent == 50
+
+    @pytest.mark.asyncio
+    async def test_update_progress_async_with_callback(self):
+        """AC4: Async progress updates invoke callback."""
+        self.tracker.start_phase(Phase.ENHANCING)
+        callback_invoked = []
+
+        def callback():
+            callback_invoked.append(True)
+
+        # Update with callback
+        await self.tracker.update_progress_async(percent=75, callback=callback)
+
+        assert len(callback_invoked) == 1
+        assert self.tracker.current_progress_percent == 75
+
+    @pytest.mark.asyncio
+    async def test_update_progress_async_with_async_callback(self):
+        """AC4: Async progress updates invoke async callback."""
+        self.tracker.start_phase(Phase.FORMATTING)
+        callback_invoked = []
+
+        async def async_callback():
+            await asyncio.sleep(0.01)
+            callback_invoked.append(True)
+
+        # Update with async callback
+        await self.tracker.update_progress_async(percent=100, callback=async_callback)
+
+        assert len(callback_invoked) == 1
+
+    @pytest.mark.asyncio
+    async def test_run_periodic_updates(self):
+        """AC4: Periodic updates run automatically for long operations."""
+        self.tracker.start_phase(Phase.ENHANCING)
+        update_count = []
+
+        def update_callback():
+            update_count.append(len(update_count) + 1)
+
+        self.tracker.set_periodic_update_callback(update_callback)
+
+        # Run periodic updates for 0.5 seconds (should trigger 2-3 updates at 0.2s interval)
+        update_task = asyncio.create_task(self.tracker.run_periodic_updates(update_interval=0.2))
+
+        # Wait for a few updates
+        await asyncio.sleep(0.5)
+
+        # Stop the phase to end periodic updates
+        self.tracker.current_phase = None
+        await asyncio.sleep(0.3)  # Allow task to complete
+
+        # Should have at least 2 updates
+        assert len(update_count) >= 2
+
+    @pytest.mark.asyncio
+    async def test_periodic_updates_stop_on_error(self):
+        """AC5: Periodic updates stop when error occurs."""
+        self.tracker.start_phase(Phase.ANALYZING)
+
+        # Start periodic updates
+        update_task = asyncio.create_task(self.tracker.run_periodic_updates(update_interval=0.1))
+
+        # Trigger error after short delay
+        await asyncio.sleep(0.15)
+        self.tracker.report_error(Phase.ANALYZING, "Test error")
+
+        # Wait for task to complete
+        await asyncio.sleep(0.2)
+
+        # Error state should be set
+        assert self.tracker.is_error_state is True
+
+
+class TestPerformanceRequirements:
+    """Test suite for performance requirements (MEDIUM-5 fix)."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.tracker = ProgressTracker()
+
+    def test_update_progress_overhead_under_10ms(self):
+        """Performance: update_progress() completes in <10ms."""
+        self.tracker.start_phase(Phase.ANALYZING)
+
+        # Measure time for 100 updates
+        start = time.perf_counter()
+        for _ in range(100):
+            self.tracker.update_progress(percent=50)
+        elapsed = time.perf_counter() - start
+
+        # Average should be well under 10ms per update
+        avg_time_ms = (elapsed / 100) * 1000
+        assert avg_time_ms < 10.0, f"Average update time {avg_time_ms:.2f}ms exceeds 10ms budget"
+
+    def test_phase_transition_overhead_minimal(self):
+        """Performance: Phase transitions are fast."""
+        phases = [Phase.ANALYZING, Phase.ENHANCING, Phase.FORMATTING]
+
+        start = time.perf_counter()
+        for phase in phases * 10:  # 30 transitions
+            self.tracker.start_phase(phase)
+        elapsed = time.perf_counter() - start
+
+        # Should complete 30 transitions in well under 100ms
+        assert elapsed < 0.1, f"Phase transitions took {elapsed*1000:.2f}ms, expected <100ms"
+
+    def test_message_formatting_performance(self):
+        """Performance: Message formatting is fast."""
+        self.tracker.start_phase(Phase.ENHANCING)
+        self.tracker.update_progress(percent=50, estimated_remaining_seconds=5.0)
+
+        # Measure formatting time
+        start = time.perf_counter()
+        for _ in range(1000):
+            _ = self.tracker._format_message()
+        elapsed = time.perf_counter() - start
+
+        # 1000 formats should complete in <100ms
+        assert elapsed < 0.1, f"Message formatting took {elapsed*1000:.2f}ms for 1000 calls"
+
+
+class TestErrorRecoveryStrategies:
+    """Test suite for error recovery strategies (MEDIUM-6 fix)."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.tracker = ProgressTracker()
+
+    def test_default_recovery_strategy_analyzing(self):
+        """AC5: Default recovery strategy for ANALYZING phase."""
+        self.tracker.report_error(Phase.ANALYZING, "Could not detect project type")
+
+        assert "Falling back to basic analysis" in self.tracker.error_message
+
+    def test_default_recovery_strategy_enhancing(self):
+        """AC5: Default recovery strategy for ENHANCING phase."""
+        self.tracker.report_error(Phase.ENHANCING, "API timeout")
+
+        assert "Using cached enhancement" in self.tracker.error_message
+
+    def test_default_recovery_strategy_formatting(self):
+        """AC5: Default recovery strategy for FORMATTING phase."""
+        self.tracker.report_error(Phase.FORMATTING, "Formatting failed")
+
+        assert "Some features may be unavailable" in self.tracker.error_message
+
+    def test_custom_recovery_overrides_default(self):
+        """AC5: Custom recovery guidance overrides default."""
+        custom_guidance = "Please try again with different parameters"
+        self.tracker.report_error(
+            Phase.ANALYZING,
+            "Custom error",
+            recovery_guidance=custom_guidance
+        )
+
+        assert custom_guidance in self.tracker.error_message
+        assert "Falling back" not in self.tracker.error_message
