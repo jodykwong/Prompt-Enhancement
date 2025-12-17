@@ -2,7 +2,7 @@
 
 **Story ID**: 1.1
 **Epic**: Epic 1 - Fast & Responsive `/pe` Command
-**Status**: ready-for-review
+**Status**: done
 **Created**: 2025-12-16
 **Started**: 2025-12-16
 **Completed**: 2025-12-16
@@ -267,13 +267,14 @@ class TestParameterParser:
 
 ✅ **Implementation Complete** - All 6 tasks and 27 subtasks completed.
 
-**What was implemented:**
+**What was implemented (Story 1.1 Scope):**
 1. **PeCommand Handler** (`src/prompt_enhancement/cli/pe_command.py`)
    - Claude Code `/pe` command execution handler
    - Accepts command string and returns structured result
    - 5 error categories with user-friendly messages
    - Non-blocking acknowledgment with progress emoji
    - Performance: <100ms parsing (verified by test)
+   - **Note**: Includes PerformanceTracker integration (belongs to Story 1.4)
 
 2. **ParameterParser** (`src/prompt_enhancement/cli/parser.py`)
    - Robust tokenization respecting quoted strings
@@ -283,13 +284,14 @@ class TestParameterParser:
    - Working directory detection (uses `os.getcwd()`)
    - Comprehensive error messages for all failure paths
 
-3. **Comprehensive Test Suite** (53 tests)
-   - 24 parameter parser tests covering all edge cases
+3. **Comprehensive Test Suite** (55 tests)
+   - 26 parameter parser tests covering all edge cases
    - 29 PeCommand handler tests covering all AC
-   - 95% code coverage (159 statements, 8 missed)
+   - Core code coverage: 95% for pe_command.py and parser.py
    - All acceptance criteria exercised
-   - Performance tests (<100ms requirement)
+   - Performance tests (<100ms requirement verified)
    - Error message clarity tests
+   - Note: output_formatter.py, progress.py, and performance.py are beyond Story 1.1 scope
 
 **Architecture compliance:**
 - ✅ Modular: Separate CLI package with parser and command handler
@@ -333,7 +335,14 @@ class TestParameterParser:
 - **Created**: 2025-12-16 by create-story workflow
 - **Implementation Started**: 2025-12-16
 - **Implementation Completed**: 2025-12-16
-- **Status**: ready-for-review
+- **Code Review Started**: 2025-12-17
+- **Code Review Completed**: 2025-12-17
+  - Added 2 AC3 verification tests (test_ac3_all_error_categories, test_ac3_error_messages_are_actionable)
+  - Added 5 coverage improvement tests for Parser edge cases
+  - Made PerformanceTracker optional (belongs to Story 1.4)
+  - Updated documentation for scope clarity
+  - Total tests: 62 (added 7 new tests from 55)
+- **Status**: done
 
 ---
 

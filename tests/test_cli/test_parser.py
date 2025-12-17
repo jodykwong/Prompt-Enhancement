@@ -293,3 +293,47 @@ class TestParameterParser:
         assert "\\" in result.prompt
         assert '"' in result.prompt
         assert 'He said' in result.prompt
+
+    def test_unquote_string_not_quoted_error(self):
+        """Test _unquote_string raises error for non-quoted strings."""
+        parser = ParameterParser()
+        with pytest.raises(ParseError) as exc_info:
+            parser._unquote_string('not quoted string')
+        assert "quoted" in str(exc_info.value).lower()
+
+    def test_tokenize_with_unquoted_text(self):
+        """Test _tokenize properly handles unquoted text."""
+        parser = ParameterParser()
+        tokens = parser._tokenize('--override naming=camelCase "prompt text"')
+        # Should have flag, flag value, and quoted prompt
+        assert len(tokens) == 3
+        assert tokens[0] == '--override'
+        assert tokens[1] == 'naming=camelCase'
+        assert tokens[2] == '"prompt text"'
+
+    def test_validate_override_with_invalid_key(self):
+        """Test _validate_override rejects invalid override keys."""
+        parser = ParameterParser()
+        with pytest.raises(ParseError) as exc_info:
+            parser._validate_override('invalid_key', 'value')
+        error_msg = str(exc_info.value).lower()
+        assert "invalid" in error_msg or "key" in error_msg
+
+    def test_validate_override_with_invalid_value(self):
+        """Test _validate_override rejects invalid values for keys."""
+        parser = ParameterParser()
+        with pytest.raises(ParseError) as exc_info:
+            parser._validate_override('naming', 'invalid_style')
+        error_msg = str(exc_info.value).lower()
+        assert "invalid" in error_msg or "value" in error_msg
+
+    def test_find_closing_quote_not_escaped(self):
+        """Test _find_closing_quote correctly identifies unescaped quotes."""
+        parser = ParameterParser()
+        # String with escaped quote then unescaped quote
+        s = 'some text \\" and then " ending'
+        # Start from position after first quote
+        result = parser._find_closing_quote(s, 12)
+        # Should find the unescaped quote
+        assert s[result] == '"'
+        assert 'and then' in s[:result]

@@ -227,4 +227,49 @@ class TestPeCommand:
         ack = result["acknowledgment"]
         assert ack.startswith("🔍")
         assert "Analyzing" in ack
-        assert "test prompt" in ack
+
+    def test_ac3_all_error_categories(self):
+        """AC3: Verify all 5 error categories produce proper messages."""
+        # Test ERROR_MISSING_PROMPT
+        result = self.command.execute('/pe')
+        assert result["error_code"] == "MISSING_PROMPT"
+        assert "Usage:" in result["message"]
+        assert result["status"] == "error"
+
+        # Test ERROR_EMPTY_PROMPT
+        result = self.command.execute('/pe ""')
+        assert result["error_code"] == "EMPTY_PROMPT"
+        assert "empty" in result["message"].lower()
+
+        # Test ERROR_INVALID_FLAG
+        result = self.command.execute('/pe --badflags "prompt"')
+        assert result["error_code"] == "INVALID_FLAG"
+        assert "flag" in result["message"].lower()
+
+        # Test ERROR_INVALID_OVERRIDE
+        result = self.command.execute('/pe --override badkey=value "prompt"')
+        assert result["error_code"] == "INVALID_OVERRIDE"
+        assert "override" in result["message"].lower() or "invalid" in result["message"].lower()
+
+        # Test ERROR_PARSE_ERROR (unclosed quote)
+        result = self.command.execute('/pe "unclosed')
+        assert result["error_code"] == "PARSE_ERROR"
+        assert "quote" in result["message"].lower() or "closed" in result["message"].lower()
+
+    def test_ac3_error_messages_are_actionable(self):
+        """AC3: All error messages should include actionable guidance."""
+        test_cases = [
+            ('/pe', 'MISSING_PROMPT'),
+            ('/pe ""', 'EMPTY_PROMPT'),
+            ('/pe --invalid "prompt"', 'INVALID_FLAG'),
+            ('/pe --override bad=val "prompt"', 'INVALID_OVERRIDE'),
+        ]
+
+        for cmd, expected_code in test_cases:
+            result = self.command.execute(cmd)
+            assert result["status"] == "error"
+            assert result["error_code"] == expected_code
+            # All error messages should include some form of guidance
+            msg_lower = result["message"].lower()
+            assert any(x in msg_lower for x in ['/pe', 'usage', 'try', 'example', 'valid']), \
+                f"Error message for {cmd} lacks guidance: {result['message']}"

@@ -27,17 +27,24 @@ class PeCommand:
     def __init__(self):
         """Initialize the PE command handler."""
         self.parser = ParameterParser()
-        self.performance_tracker = PerformanceTracker()
-        # Set default time budget (5-15 second target)
-        self.time_budget = TimeBudget(
-            total_seconds=15,
-            analysis_seconds=5,
-            standards_seconds=2,
-            llm_seconds=5,
-            formatting_seconds=1,
-            cache_seconds=1
-        )
-        self.performance_tracker.set_budget(self.time_budget)
+        # Note: PerformanceTracker will be fully integrated in Story 1.4
+        # For Story 1.1, performance tracking is optional instrumentation only
+        try:
+            self.performance_tracker = PerformanceTracker()
+            # Set default time budget (<100ms for Story 1.1 parsing, 5-15s for full pipeline in Story 1.4)
+            self.time_budget = TimeBudget(
+                total_seconds=15,
+                analysis_seconds=5,
+                standards_seconds=2,
+                llm_seconds=5,
+                formatting_seconds=1,
+                cache_seconds=1
+            )
+            self.performance_tracker.set_budget(self.time_budget)
+        except Exception:
+            # If performance tracking fails, continue without it (Story 1.1 doesn't require it)
+            self.performance_tracker = None
+            self.time_budget = None
 
     def execute(self, command_string: str) -> Dict[str, Any]:
         """
@@ -49,38 +56,48 @@ class PeCommand:
         Returns:
             Dictionary with status, prompt, working_dir, overrides, acknowledgment, and performance metrics
         """
-        # Reset tracker for new execution
-        self.performance_tracker = PerformanceTracker()
-        self.performance_tracker.set_budget(self.time_budget)
+        # Optional: Reset tracker for new execution (if available)
+        if self.performance_tracker:
+            self.performance_tracker = PerformanceTracker()
+            if self.time_budget:
+                self.performance_tracker.set_budget(self.time_budget)
 
         try:
-            # Track command parsing
-            self.performance_tracker.start_phase("command_parsing")
+            # Track command parsing (if performance tracking available)
+            if self.performance_tracker:
+                self.performance_tracker.start_phase("command_parsing")
 
             # Parse the command
             parse_result = self.parser.parse(command_string)
-            self.performance_tracker.end_phase("command_parsing")
+
+            if self.performance_tracker:
+                self.performance_tracker.end_phase("command_parsing")
 
             # Build acknowledgment
             acknowledgment = self._build_acknowledgment(parse_result.prompt)
 
-            # Get performance metrics
-            metrics = self.performance_tracker.get_metrics()
+            # Get performance metrics (if available)
+            performance_data = None
+            if self.performance_tracker:
+                metrics = self.performance_tracker.get_metrics()
+                performance_data = {
+                    "total_execution_time": metrics.total_execution_time,
+                    "phase_times": metrics.phase_times,
+                    "cache_hit": metrics.cache_hit,
+                }
 
             # Return success result
-            return {
+            result = {
                 "status": "success",
                 "prompt": parse_result.prompt,
                 "working_dir": parse_result.working_dir,
                 "overrides": parse_result.overrides,
                 "acknowledgment": acknowledgment,
                 "error_code": None,
-                "performance": {
-                    "total_execution_time": metrics.total_execution_time,
-                    "phase_times": metrics.phase_times,
-                    "cache_hit": metrics.cache_hit,
-                },
             }
+            if performance_data:
+                result["performance"] = performance_data
+            return result
 
         except ParseError as e:
             # Handle parse errors
