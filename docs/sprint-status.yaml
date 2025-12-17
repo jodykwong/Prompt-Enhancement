@@ -45,7 +45,7 @@ epic-1-retrospective: optional
 # ============================================================================
 epic-2: in-progress
 2-1-detect-project-type-from-filesystem-markers: review
-2-2-identify-project-indicator-files: ready-for-dev
+2-2-identify-project-indicator-files: done
 2-3-extract-git-history-and-project-context: backlog
 2-4-generate-project-fingerprint-for-caching: backlog
 2-5-detect-naming-conventions: backlog
@@ -105,12 +105,12 @@ summary:
   epics_backlog: 5
   epics_in_progress: 0
   epics_done: 1
-  stories_backlog: 24
+  stories_backlog: 23
   stories_drafted: 0
   stories_ready_for_dev: 0
   stories_in_progress: 0
-  stories_review: 0
-  stories_done: 4
+  stories_review: 1
+  stories_done: 5
 
 # ============================================================================
 # EPIC 依赖关系与执行顺序
