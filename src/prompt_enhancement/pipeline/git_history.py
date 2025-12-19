@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from .tech_stack import ProjectLanguage
+from ..cli.performance import PerformanceTracker  # FIX #7: Integrate PerformanceTracker
 
 
 logger = logging.getLogger(__name__)
@@ -36,13 +37,23 @@ class ContributorInfo:
 
 
 @dataclass
+class CommitInfo:
+    """Information about a single commit (FIX #4: AC2 - structured commit data)."""
+
+    message: str
+    author: str
+    date: str
+    hash: str
+
+
+@dataclass
 class GitHistoryResult:
     """Complete Git history analysis result."""
 
     git_available: bool
     total_commits: Optional[int]
     current_branch: Optional[str]
-    recent_commits: List[str]
+    recent_commits: List[CommitInfo]  # FIX #4: Changed from List[str] to List[CommitInfo]
     contributors: List[str]
     commits_per_week: Optional[float]
     first_commit_date: Optional[str]
@@ -51,6 +62,7 @@ class GitHistoryResult:
     branch_count: Optional[int]
     is_actively_maintained: bool
     confidence: float
+    branch_structure: Optional[dict] = None  # FIX #5: Add branch structure analysis
 
 
 # ============================================================================
@@ -85,6 +97,7 @@ class GitHistoryDetector:
         detected_language: Optional[ProjectLanguage] = None,
         max_commits: int = DEFAULT_MAX_COMMITS,
         timeout_sec: float = DEFAULT_TIMEOUT_SEC,
+        performance_tracker: Optional[PerformanceTracker] = None,  # FIX #7
     ):
         """
         Initialize Git history detector.
@@ -94,12 +107,14 @@ class GitHistoryDetector:
             detected_language: Language from Story 2.1 (optional)
             max_commits: Max commits to process (default 100)
             timeout_sec: Timeout for Git commands (default 2.0 seconds)
+            performance_tracker: PerformanceTracker from Story 1.4 (optional, FIX #7)
         """
         self.project_root = Path(project_root)
         self.detected_language = detected_language
         self.max_commits = max_commits
         self.timeout_sec = timeout_sec
         self.start_time = time.perf_counter()
+        self.performance_tracker = performance_tracker  # FIX #7
 
     # ========================================================================
     # Main Entry Point
@@ -109,10 +124,16 @@ class GitHistoryDetector:
         """
         Extract Git history and return analysis result.
 
+        FIX #7: Integrated with PerformanceTracker for phase tracking.
+
         Returns:
             GitHistoryResult with all analysis data, or None on critical failure
         """
         try:
+            # FIX #7: Start performance tracking
+            if self.performance_tracker:
+                self.performance_tracker.start_phase("git_history")
+
             # Check if Git is available
             if not self._check_git_available():
                 logger.debug(f"Git not available in {self.project_root}")
@@ -148,8 +169,10 @@ class GitHistoryDetector:
             contributors = self._parse_contributors(log_output)
             stats = self._calculate_statistics(log_output, total_commits)
 
-            # Get branch count
+            # Get branch info
             branch_count = self._get_branch_count()
+            # FIX #5: Add branch structure analysis
+            branch_structure = self._analyze_branch_structure()
 
             # Calculate confidence
             confidence = self._calculate_confidence(
@@ -159,7 +182,7 @@ class GitHistoryDetector:
                 stats.get("repository_age_days") is not None,
             )
 
-            return GitHistoryResult(
+            result = GitHistoryResult(
                 git_available=True,
                 total_commits=total_commits,
                 current_branch=current_branch,
@@ -172,10 +195,20 @@ class GitHistoryDetector:
                 branch_count=branch_count,
                 is_actively_maintained=stats.get("is_actively_maintained", False),
                 confidence=confidence,
+                branch_structure=branch_structure,  # FIX #5
             )
+
+            # FIX #7: End performance tracking
+            if self.performance_tracker:
+                self.performance_tracker.end_phase("git_history")
+
+            return result
 
         except Exception as e:
             logger.error(f"Error extracting git history: {e}", exc_info=True)
+            # FIX #7: End performance tracking on error too
+            if self.performance_tracker:
+                self.performance_tracker.end_phase("git_history")
             return None
 
     # ========================================================================
@@ -288,13 +321,63 @@ class GitHistoryDetector:
             return len([line for line in output.split("\n") if line.strip()])
         return None
 
+    def _analyze_branch_structure(self) -> Optional[dict]:
+        """
+        Analyze branch structure and naming patterns (FIX #5: AC3).
+
+        Returns:
+            Dictionary with branch structure analysis:
+            - main_branch: Main branch name
+            - total_branches: Total count
+            - feature_branches: Count of feature/* branches
+            - bugfix_branches: Count of bugfix/* or fix/* branches
+            - release_branches: Count of release/* branches
+            - other_branches: Count of other branches
+        """
+        output = self._run_git_command(["git", "branch", "-a", "--format=%(refname)"])
+        if not output:
+            return None
+
+        structure = {
+            "main_branch": self._get_current_branch(),
+            "total_branches": 0,
+            "feature_branches": 0,
+            "bugfix_branches": 0,
+            "release_branches": 0,
+            "hotfix_branches": 0,
+            "other_branches": 0,
+        }
+
+        for line in output.split("\n"):
+            if not line.strip():
+                continue
+
+            structure["total_branches"] += 1
+            branch_name = line.strip().lower()
+
+            # Analyze naming patterns
+            if "feature/" in branch_name or "/feature/" in branch_name:
+                structure["feature_branches"] += 1
+            elif "bugfix/" in branch_name or "fix/" in branch_name or "/bugfix/" in branch_name:
+                structure["bugfix_branches"] += 1
+            elif "release/" in branch_name or "/release/" in branch_name:
+                structure["release_branches"] += 1
+            elif "hotfix/" in branch_name or "/hotfix/" in branch_name:
+                structure["hotfix_branches"] += 1
+            else:
+                structure["other_branches"] += 1
+
+        return structure
+
     # ========================================================================
     # Commit Message Parsing
     # ========================================================================
 
-    def _parse_recent_commits(self, log_output: str) -> List[str]:
+    def _parse_recent_commits(self, log_output: str) -> List[CommitInfo]:
         """
-        Extract recent commit messages from git log output.
+        Extract recent commit information from git log output.
+
+        FIX #4: Returns structured CommitInfo objects with author, date, message.
 
         Expected format: 'hash|author|date|message'
         Limits to RECENT_COMMITS_LIMIT (10) most recent commits.
@@ -303,7 +386,7 @@ class GitHistoryDetector:
             log_output: Output from git log command
 
         Returns:
-            List of formatted message strings
+            List of CommitInfo objects
         """
         commits = []
         if not log_output:
@@ -319,6 +402,9 @@ class GitHistoryDetector:
                     # Extract fields
                     hash_short = parts[0][:7]
                     author = parts[1]
+                    # Remove email if present (AC2: name only, not email)
+                    if "<" in author:
+                        author = author.split("<")[0].strip()
                     date = parts[2]
                     message = parts[3]
 
@@ -329,7 +415,12 @@ class GitHistoryDetector:
                     if message.startswith("Merge ") and len(message) < 30:
                         continue
 
-                    commits.append(message_clean)
+                    commits.append(CommitInfo(
+                        message=message_clean,
+                        author=author,
+                        date=date,
+                        hash=hash_short
+                    ))
             except Exception as e:
                 logger.debug(f"Error parsing commit line: {e}")
                 continue
@@ -344,15 +435,19 @@ class GitHistoryDetector:
         """
         Extract contributor names from git log.
 
+        FIX #2: git shortlog does NOT accept --max-count flag, removed.
+        FIX #3: Added explicit top-5 limit in Python.
+
         Args:
             log_output: Output from git log command
 
         Returns:
-            List of top contributor names
+            List of top contributor names (limited to TOP_CONTRIBUTORS_LIMIT)
         """
         # Use git shortlog to get contributors efficiently
+        # NOTE: shortlog doesn't support --max-count, we limit in Python instead
         shortlog_output = self._run_git_command(
-            ["git", "shortlog", "-sn", "--all", f"--max-count={self.TOP_CONTRIBUTORS_LIMIT}"]
+            ["git", "shortlog", "-sn", "--all"]
         )
 
         contributors = []
@@ -374,7 +469,8 @@ class GitHistoryDetector:
                     logger.debug(f"Error parsing contributor line: {e}")
                     continue
 
-        return contributors
+        # FIX #3: Limit to top 5 contributors
+        return contributors[:self.TOP_CONTRIBUTORS_LIMIT]
 
     # ========================================================================
     # Statistics Calculation
@@ -522,6 +618,16 @@ class GitHistoryDetector:
     # ========================================================================
 
     def _is_timeout(self) -> bool:
-        """Check if timeout has been exceeded."""
-        elapsed = time.perf_counter() - self.start_time
-        return elapsed > self.timeout_sec
+        """
+        Check if timeout has been exceeded (FIX #7: Use PerformanceTracker if available).
+
+        Returns:
+            True if timeout exceeded
+        """
+        if self.performance_tracker:
+            # Use PerformanceTracker's timeout checking
+            return self.performance_tracker.check_soft_timeout(self.timeout_sec)
+        else:
+            # Fallback to manual tracking
+            elapsed = time.perf_counter() - self.start_time
+            return elapsed > self.timeout_sec

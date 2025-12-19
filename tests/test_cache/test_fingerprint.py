@@ -26,7 +26,7 @@ from prompt_enhancement.pipeline.project_files import (
     ProjectMetadata,
     ProjectIndicatorResult,
 )
-from prompt_enhancement.pipeline.git_history import GitHistoryResult
+from prompt_enhancement.pipeline.git_history import GitHistoryResult, CommitInfo  # FIX HIGH #3
 
 
 class TestFingerprintDataStructures:
@@ -218,6 +218,83 @@ class TestFingerprintGeneration:
             assert fp1.algorithm == fp2.algorithm
             assert fp1.version == fp2.version
 
+    def test_timestamp_is_metadata_not_part_of_hash(self):
+        """
+        Timestamp is metadata about fingerprint generation, not part of hash - FIX HIGH #1.
+
+        AC4 requires deterministic hash, but timestamp can differ (it's metadata).
+        This test verifies that:
+        1. Fingerprint HASH is identical across runs (deterministic)
+        2. Timestamp MAY differ (it's metadata about when fingerprint was generated)
+        3. Cache validation correctly ignores timestamp (only compares hash)
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            Path(tmpdir, "package.json").write_text('{"name": "test"}')
+
+            tech_result = ProjectTypeDetectionResult(
+                primary_language=ProjectLanguage.NODEJS,
+                version="18.0.0",
+                confidence=0.95,
+                markers_found=["package.json"],
+                secondary_languages=[],
+            )
+
+            git_result = GitHistoryResult(
+                git_available=False,
+                total_commits=None,
+                current_branch=None,
+                recent_commits=[],
+                contributors=[],
+                commits_per_week=None,
+                first_commit_date=None,
+                last_commit_date=None,
+                repository_age_days=None,
+                branch_count=None,
+                is_actively_maintained=False,
+                confidence=0.0,
+            )
+
+            metadata = ProjectMetadata(
+                name="test",
+                version="1.0.0",
+                source_language=ProjectLanguage.NODEJS,
+                dependencies=[],
+                dev_dependencies=[],
+                target_version="18.0.0",
+                package_manager="npm",
+            )
+
+            files_result = ProjectIndicatorResult(
+                metadata=metadata,
+                files_found=["package.json"],
+                lock_files_present=set(),
+                confidence=0.95,
+            )
+
+            generator = FingerprintGenerator(Path(tmpdir))
+
+            # Generate first fingerprint
+            fp1 = generator.generate_fingerprint(tech_result, files_result, git_result)
+
+            # Small delay to ensure different timestamp
+            time.sleep(0.01)
+
+            # Generate second fingerprint (same project, different time)
+            fp2 = generator.generate_fingerprint(tech_result, files_result, git_result)
+
+            # VERIFY: Fingerprint hash is IDENTICAL (deterministic)
+            assert fp1.fingerprint == fp2.fingerprint, "Hash must be deterministic"
+
+            # VERIFY: Timestamp MAY differ (it's metadata, not part of hash)
+            # Note: Timestamps will differ if generated at different times
+            # This is EXPECTED and CORRECT behavior
+
+            # VERIFY: Cache validation works (ignores timestamp)
+            now = datetime.now(timezone.utc)
+            cache_timestamp = now - timedelta(hours=1)
+            is_valid = generator.validate_cache(fp1, fp2, cache_timestamp)
+            assert is_valid is True, "Cache validation must ignore timestamp differences"
+
     def test_fingerprint_changes_with_file_modification(self):
         """Should detect file changes - AC5."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -296,12 +373,19 @@ class TestGitMetadataInFingerprint:
                 secondary_languages=[],
             )
 
-            # Include git metadata
+            # Include git metadata (FIX HIGH #3: Use CommitInfo objects)
             git_result = GitHistoryResult(
                 git_available=True,
                 total_commits=100,
                 current_branch="main",
-                recent_commits=["feat: Add feature"],
+                recent_commits=[
+                    CommitInfo(
+                        message="feat: Add feature",
+                        author="Alice",
+                        date="2025-12-18T00:00:00Z",
+                        hash="abc1234"
+                    )
+                ],
                 contributors=["Alice"],
                 commits_per_week=5.0,
                 first_commit_date="2023-01-01T00:00:00Z",
@@ -512,8 +596,8 @@ class TestCacheValidation:
             now = datetime.now(timezone.utc)
             cache_timestamp = now - timedelta(hours=1)
 
-            # Validate cache
-            is_valid = generator.validate_cache(fp1, fp2, cache_timestamp)
+            # Validate cache (FIX MEDIUM #7: Updated parameter order to cached, current)
+            is_valid = generator.validate_cache(fp2, fp1, cache_timestamp)
 
             assert is_valid is True
 
@@ -573,7 +657,7 @@ class TestCacheValidation:
             now = datetime.now(timezone.utc)
             cache_timestamp = now - timedelta(hours=1)
 
-            # Validate cache
+            # Validate cache (FIX MEDIUM #7: Updated parameter order to cached, current)
             is_valid = generator.validate_cache(fp1, fp2, cache_timestamp)
 
             assert is_valid is False
@@ -630,7 +714,7 @@ class TestCacheValidation:
             now = datetime.now(timezone.utc)
             old_cache_timestamp = now - timedelta(hours=25)
 
-            # Validate cache
+            # Validate cache (FIX MEDIUM #7: Parameter order unchanged since both are same fp)
             is_valid = generator.validate_cache(fp, fp, old_cache_timestamp, ttl_hours=24)
 
             assert is_valid is False
@@ -659,7 +743,14 @@ class TestPerformance:
                 git_available=True,
                 total_commits=1000,
                 current_branch="main",
-                recent_commits=["feat: Add"],
+                recent_commits=[
+                    CommitInfo(
+                        message="feat: Add",
+                        author="Alice",
+                        date="2025-12-18T00:00:00Z",
+                        hash="abc1234"
+                    )
+                ],
                 contributors=["Alice"],
                 commits_per_week=10.0,
                 first_commit_date="2023-01-01T00:00:00Z",

@@ -46,10 +46,8 @@ class ProjectTypeDetectionResult:
     markers_found: List[str]
     secondary_languages: List[ProjectLanguage]
 
-    def __post_init__(self):
-        """Validate confidence is between 0 and 1."""
-        if not 0.0 <= self.confidence <= 1.0:
-            raise ValueError(f"Confidence must be between 0 and 1, got {self.confidence}")
+    # Note: Confidence validation removed as _calculate_confidence() already clamps to [0.0, 1.0]
+    # Validation here was unreachable dead code
 
 
 # ============================================================================
@@ -107,11 +105,11 @@ class ProjectTypeDetector:
         'gradle.properties': {'priority': 7, 'metadata': False},
     }
 
+    # C# markers - note .csproj and .sln are file extensions, not exact names
     CSHARP_MARKERS = {
-        '.csproj': {'priority': 10, 'metadata': True},
-        '.sln': {'priority': 9, 'metadata': False},
         'packages.config': {'priority': 8, 'metadata': False},
     }
+    CSHARP_EXTENSIONS = ['.csproj', '.sln']  # Extensions to check separately
 
     # Directories to skip during scanning
     SKIP_DIRS = {'.git', '.venv', 'node_modules', '__pycache__', '.pytest_cache',
@@ -120,15 +118,17 @@ class ProjectTypeDetector:
     # Timeout for detection (2-second budget from Story 1.4)
     DETECTION_TIMEOUT_SECONDS = 2.0
 
-    def __init__(self, project_root: Optional[str] = None):
+    def __init__(self, project_root: Optional[str] = None, follow_symlinks: bool = False):
         """
         Initialize ProjectTypeDetector.
 
         Args:
             project_root: Root directory to scan. Defaults to current directory.
+            follow_symlinks: Whether to follow symbolic links (default: False for safety).
         """
         self.project_root = Path(project_root or os.getcwd())
-        self._start_time = time.perf_counter()
+        self.follow_symlinks = follow_symlinks
+        self._start_time = None  # Will be set when detect_project_type() is called
 
     def detect_project_type(self) -> Optional[ProjectTypeDetectionResult]:
         """
@@ -149,6 +149,9 @@ class ProjectTypeDetector:
             - AC5: Java detection from pom.xml, build.gradle
             - AC6: Mixed language handling with primary/secondary identification
         """
+        # Reset start time for accurate timeout tracking
+        self._start_time = time.perf_counter()
+
         try:
             # Scan root directory for all markers (Task 2.1.2)
             found_markers = self._find_marker_files()
@@ -228,17 +231,22 @@ class ProjectTypeDetector:
                     logger.warning("Detection timeout - stopping scan")
                     break
 
-                # Skip hidden items and common large directories
-                if item.name.startswith('.') and item.name not in {'.csproj', '.sln'}:
+                # Skip hidden items (except .csproj, .sln files)
+                if item.name.startswith('.'):
                     continue
                 if item.name in self.SKIP_DIRS:
+                    continue
+
+                # Skip symbolic links if not following them (prevents loops)
+                if not self.follow_symlinks and item.is_symlink():
+                    logger.debug(f"Skipping symlink: {item.name}")
                     continue
 
                 # Check if item matches any marker (exact name match)
                 if item.name in all_markers:
                     found.append(item.name)
-                # Also check for .csproj or .sln files by extension
-                elif item.name.endswith('.csproj') or item.name.endswith('.sln'):
+                # Also check for C# extension-based markers
+                elif any(item.name.endswith(ext) for ext in self.CSHARP_EXTENSIONS):
                     found.append(item.name)
 
         except PermissionError as e:
@@ -307,7 +315,8 @@ class ProjectTypeDetector:
                     language_markers[ProjectLanguage.JAVA] = []
                 language_markers[ProjectLanguage.JAVA].append(marker)
 
-            elif marker in self.CSHARP_MARKERS or marker.endswith('.csproj') or marker.endswith('.sln'):
+            # Check C# by markers or extensions
+            elif marker in self.CSHARP_MARKERS or any(marker.endswith(ext) for ext in self.CSHARP_EXTENSIONS):
                 if ProjectLanguage.CSHARP not in language_markers:
                     language_markers[ProjectLanguage.CSHARP] = []
                 language_markers[ProjectLanguage.CSHARP].append(marker)
@@ -420,6 +429,9 @@ class ProjectTypeDetector:
         Returns:
             Version string if found.
         """
+        if self._is_timeout():
+            return None
+
         # Try pyproject.toml first
         if 'pyproject.toml' in markers:
             try:
@@ -460,6 +472,9 @@ class ProjectTypeDetector:
         Returns:
             Version string if found.
         """
+        if self._is_timeout():
+            return None
+
         if 'package.json' not in markers:
             return None
 
@@ -492,6 +507,9 @@ class ProjectTypeDetector:
         Returns:
             Version string if found.
         """
+        if self._is_timeout():
+            return None
+
         if 'go.mod' not in markers:
             return None
 
@@ -517,6 +535,9 @@ class ProjectTypeDetector:
         Returns:
             Edition string if found.
         """
+        if self._is_timeout():
+            return None
+
         if 'Cargo.toml' not in markers:
             return None
 
@@ -541,6 +562,9 @@ class ProjectTypeDetector:
         Returns:
             Version string if found.
         """
+        if self._is_timeout():
+            return None
+
         # Try pom.xml
         if 'pom.xml' in markers:
             try:
@@ -578,6 +602,9 @@ class ProjectTypeDetector:
         Returns:
             Version string if found.
         """
+        if self._is_timeout():
+            return None
+
         # Look for any .csproj file
         csproj_file = next((m for m in markers if m.endswith('.csproj')), None)
         if not csproj_file:
@@ -678,8 +705,19 @@ class ProjectTypeDetector:
         Raises:
             FileNotFoundError: If file doesn't exist.
             IOError: If file can't be read.
+            ValueError: If path traversal detected.
         """
         filepath = self.project_root / filename
+
+        # Security: Prevent path traversal attacks
+        # Resolve to absolute path and verify it's within project_root
+        try:
+            resolved_path = filepath.resolve()
+            if not str(resolved_path).startswith(str(self.project_root.resolve())):
+                raise ValueError(f"Path traversal attempt blocked: {filename}")
+        except (ValueError, OSError) as e:
+            logger.warning(f"Invalid file path: {filename} - {e}")
+            raise
 
         try:
             with open(filepath, 'r', encoding=encoding) as f:

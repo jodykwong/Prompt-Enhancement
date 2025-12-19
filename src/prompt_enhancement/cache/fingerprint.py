@@ -20,6 +20,7 @@ from typing import Optional
 from prompt_enhancement.pipeline.tech_stack import ProjectTypeDetectionResult
 from prompt_enhancement.pipeline.project_files import ProjectIndicatorResult
 from prompt_enhancement.pipeline.git_history import GitHistoryResult
+from prompt_enhancement.cli.performance import PerformanceTracker  # FIX MEDIUM #5
 
 
 logger = logging.getLogger(__name__)
@@ -96,6 +97,7 @@ class FingerprintGenerator:
         project_root: Path,
         timeout_sec: float = DEFAULT_TIMEOUT_SEC,
         max_files: int = MAX_FILES,
+        performance_tracker: Optional[PerformanceTracker] = None,  # FIX MEDIUM #5
     ):
         """
         Initialize fingerprint generator.
@@ -104,10 +106,12 @@ class FingerprintGenerator:
             project_root: Root directory to fingerprint
             timeout_sec: Timeout for generation (default 1.0 seconds)
             max_files: Maximum files to process (default 100)
+            performance_tracker: Optional PerformanceTracker from Story 1.4 (FIX MEDIUM #5)
         """
         self.project_root = Path(project_root)
         self.timeout_sec = timeout_sec
         self.max_files = max_files
+        self.performance_tracker = performance_tracker  # FIX MEDIUM #5
         self.start_time = time.perf_counter()
 
     # ========================================================================
@@ -140,10 +144,16 @@ class FingerprintGenerator:
         Returns:
             FingerprintInfo with complete fingerprint and metadata, or None on timeout
         """
+        # FIX MEDIUM #5: Start performance tracking
+        if self.performance_tracker:
+            self.performance_tracker.start_phase("fingerprint")
+
         try:
             # Check timeout
             if self._is_timeout():
                 logger.warning("Fingerprint generation timeout")
+                if self.performance_tracker:
+                    self.performance_tracker.end_phase("fingerprint")
                 return None
 
             # Generate component hashes
@@ -156,8 +166,10 @@ class FingerprintGenerator:
             combined_data = f"{package_files_hash}|{lock_files_hash}|{git_metadata_hash}|{language_version_hash}"
             total_hash = hashlib.sha256(combined_data.encode("utf-8")).hexdigest()
 
-            # Count files
-            file_count = len(files_result.files_found) if files_result.files_found else 0
+            # Count files (FIX MEDIUM #4: Include both package files and lock files)
+            package_file_count = len(files_result.files_found) if files_result.files_found else 0
+            lock_file_count = len(files_result.lock_files_present) if files_result.lock_files_present else 0
+            file_count = package_file_count + lock_file_count
 
             # Create components
             components = FingerprintComponents(
@@ -178,10 +190,17 @@ class FingerprintGenerator:
                 file_count=file_count,
             )
 
+            # FIX MEDIUM #5: End performance tracking
+            if self.performance_tracker:
+                self.performance_tracker.end_phase("fingerprint")
+
             return fingerprint_info
 
         except Exception as e:
             logger.error(f"Error generating fingerprint: {e}", exc_info=True)
+            # FIX MEDIUM #5: End performance tracking even on error
+            if self.performance_tracker:
+                self.performance_tracker.end_phase("fingerprint")
             return None
 
     # ========================================================================
@@ -299,6 +318,17 @@ class FingerprintGenerator:
         AC2: Include Git metadata in fingerprint
         AC4: Deterministic output for same Git state
 
+        IMPORTANT: Only includes IMMUTABLE git data in hash:
+        - Commit count (changes only when new commits added)
+        - Branch name (changes only when branch changes)
+        - Contributor count (changes only when new contributors added)
+        - Branch count (changes only when branches added/removed)
+
+        EXCLUDED from hash (time-dependent/volatile):
+        - Commit timestamps (first_commit_date, last_commit_date)
+        - is_actively_maintained (based on "commits in last 30 days", changes over time)
+        - commits_per_week (derived from current time)
+
         Args:
             git_result: Git history result from Story 2.3
 
@@ -311,13 +341,13 @@ class FingerprintGenerator:
 
         try:
             # Build metadata string from Git information
-            # Use only immutable data (no timestamps)
+            # FIX HIGH #2: Removed is_actively_maintained (time-dependent)
+            # Use only immutable data (no timestamps, no time-derived fields)
             metadata_parts = [
                 f"commits:{git_result.total_commits or 0}",
                 f"branch:{git_result.current_branch or 'unknown'}",
                 f"contributors:{len(git_result.contributors or [])}",
                 f"branches:{git_result.branch_count or 0}",
-                f"maintained:{git_result.is_actively_maintained}",
             ]
 
             metadata_str = "|".join(metadata_parts)
@@ -380,8 +410,8 @@ class FingerprintGenerator:
 
     def validate_cache(
         self,
-        current_fingerprint: FingerprintInfo,
         cached_fingerprint: FingerprintInfo,
+        current_fingerprint: FingerprintInfo,
         cache_timestamp: datetime,
         ttl_hours: int = 24,
     ) -> bool:
@@ -391,9 +421,12 @@ class FingerprintGenerator:
         AC6: Cache validation with matching fingerprints
         AC7: Performance-conscious validation
 
+        FIX MEDIUM #7: Parameter order changed to (cached, current) for clarity.
+        More intuitive: "validate this cached fingerprint against current state"
+
         Args:
-            current_fingerprint: Currently generated fingerprint
-            cached_fingerprint: Previously cached fingerprint
+            cached_fingerprint: Previously cached fingerprint (from stored cache)
+            current_fingerprint: Currently generated fingerprint (from fresh analysis)
             cache_timestamp: When the cache was created
             ttl_hours: Time-to-live in hours (default 24)
 
@@ -402,7 +435,7 @@ class FingerprintGenerator:
         """
         try:
             # Check if fingerprints match
-            if current_fingerprint.fingerprint != cached_fingerprint.fingerprint:
+            if cached_fingerprint.fingerprint != current_fingerprint.fingerprint:
                 logger.debug("Cache invalid: fingerprint mismatch")
                 return False
 
@@ -433,6 +466,13 @@ class FingerprintGenerator:
     # ========================================================================
 
     def _is_timeout(self) -> bool:
-        """Check if timeout has been exceeded."""
-        elapsed = time.perf_counter() - self.start_time
-        return elapsed > self.timeout_sec
+        """
+        Check if timeout has been exceeded.
+
+        FIX MEDIUM #5: Use PerformanceTracker if available for consistent timeout checking.
+        """
+        if self.performance_tracker:
+            return self.performance_tracker.check_soft_timeout(self.timeout_sec)
+        else:
+            elapsed = time.perf_counter() - self.start_time
+            return elapsed > self.timeout_sec

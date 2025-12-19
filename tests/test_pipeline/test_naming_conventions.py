@@ -726,3 +726,106 @@ const DEFAULT_TIMEOUT = 30;
             assert result.sample_size > 0
             # Verify that we detected functions and classes properly
             assert len(result.function_conventions) > 0 or len(result.class_conventions) > 0
+
+    def test_real_project_integration(self):
+        """
+        FIX MEDIUM #6: Integration test with real project codebase.
+
+        Tests detection on the actual Prompt-Enhancement project itself to verify:
+        - Works with real-world code complexity
+        - Handles actual file structures
+        - Detects conventions accurately in production code
+        """
+        # Use the actual project root (3 levels up from tests/test_pipeline/)
+        project_root = Path(__file__).parent.parent.parent
+
+        # Verify we're in the right place
+        assert (project_root / "src" / "prompt_enhancement").exists(), \
+            "Test must run from Prompt-Enhancement project root"
+
+        detector = NamingConventionDetector(project_root)
+
+        # Build tech result for Python project
+        tech_result = ProjectTypeDetectionResult(
+            primary_language=ProjectLanguage.PYTHON,
+            version="3.10",
+            confidence=0.95,
+            markers_found=["setup.py", "pyproject.toml"],
+            secondary_languages=[],
+        )
+
+        # Collect actual source files
+        source_dir = project_root / "src" / "prompt_enhancement"
+        source_files = []
+
+        # Recursively find Python files
+        for py_file in source_dir.rglob("*.py"):
+            # Convert to relative path from project root
+            rel_path = py_file.relative_to(project_root)
+            source_files.append(str(rel_path))
+
+        # Build files result
+        files_result = ProjectIndicatorResult(
+            metadata=ProjectMetadata(
+                name="prompt-enhancement",
+                version="1.1.0",
+                source_language=ProjectLanguage.PYTHON,
+                dependencies=[],
+                dev_dependencies=[],
+                target_version="3.10",
+                package_manager="pip",
+            ),
+            files_found=source_files,
+            lock_files_present=set(),
+            confidence=0.95,
+        )
+
+        # Run detection on real project
+        result = detector.detect_naming_conventions(tech_result, files_result)
+
+        # Assertions for real project
+        assert result is not None, "Detection should succeed on real project"
+        assert result.files_analyzed > 0, "Should analyze at least some files"
+        assert result.identifiers_analyzed > 0, "Should find identifiers in real code"
+
+        # This project follows PEP8: snake_case functions, PascalCase classes
+        # Overall dominant depends on relative counts of classes vs functions
+        assert result.overall_dominant_convention in [
+            NamingConventionType.SNAKE_CASE,
+            NamingConventionType.PASCAL_CASE
+        ], "Overall convention should be snake_case or PascalCase (both valid per PEP8)"
+
+        # Verify class conventions (must be PascalCase per PEP8)
+        assert len(result.class_conventions) > 0, "Should detect class conventions"
+        class_dominant = result.class_conventions[0]
+        assert class_dominant.convention_type == NamingConventionType.PASCAL_CASE, \
+            "Classes should be PascalCase per PEP8"
+        assert class_dominant.percentage >= 90.0, \
+            "PascalCase should be near-universal for classes (>=90%)"
+
+        # Verify variable conventions (should be snake_case per PEP8)
+        assert len(result.variable_conventions) > 0, "Should detect variable conventions"
+        var_dominant = result.variable_conventions[0]
+        assert var_dominant.convention_type == NamingConventionType.SNAKE_CASE, \
+            "Variables should be snake_case per PEP8"
+        assert var_dominant.percentage > 60.0, \
+            "Snake_case should be dominant for variables (>60%)"
+
+        # Verify constant conventions (should be UPPER_SNAKE_CASE per PEP8)
+        if len(result.constant_conventions) > 0:
+            const_dominant = result.constant_conventions[0]
+            assert const_dominant.convention_type == NamingConventionType.UPPER_SNAKE_CASE, \
+                "Constants should be UPPER_SNAKE_CASE per PEP8"
+
+        # Verify confidence and consistency
+        assert result.overall_confidence > 0.0, "Should have non-zero confidence"
+        assert result.consistency_score > 0.0, \
+            "Real project should have measurable consistency"
+
+        # Verify performance on real project
+        assert result.files_analyzed <= 100, \
+            "Should respect sampling limit even on large projects"
+
+        # Verify we detected meaningful data
+        assert result.identifiers_analyzed >= 50, \
+            "Should analyze meaningful number of identifiers in real project"

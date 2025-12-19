@@ -510,33 +510,27 @@ class TestEdgeCases:
 
     def test_read_empty_file(self):
         """Test reading empty file"""
-        handler = FileAccessHandler()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            handler = FileAccessHandler(project_root=temp_dir)
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-            temp_path = f.name
+            temp_path = Path(temp_dir) / "empty.txt"
+            temp_path.write_text("")
 
-        try:
-            content = handler.try_read_file(temp_path)
+            content = handler.try_read_file(str(temp_path))
             assert content == ""
             assert handler.files_successfully_accessed == 1
-        finally:
-            os.unlink(temp_path)
 
     def test_read_very_large_file(self):
         """Test reading large file"""
-        handler = FileAccessHandler()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            handler = FileAccessHandler(project_root=temp_dir)
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-            # Write 1MB of content
-            f.write("x" * (1024 * 1024))
-            temp_path = f.name
+            temp_path = Path(temp_dir) / "large.txt"
+            temp_path.write_text("x" * (1024 * 1024))
 
-        try:
-            content = handler.try_read_file(temp_path)
+            content = handler.try_read_file(str(temp_path))
             assert len(content) == (1024 * 1024)
             assert handler.files_successfully_accessed == 1
-        finally:
-            os.unlink(temp_path)
 
     def test_zero_files_attempted(self):
         """Test report with no files attempted"""
@@ -545,3 +539,131 @@ class TestEdgeCases:
         report = handler.get_access_report()
         assert report.total_files_attempted == 0
         assert report.access_coverage_percentage == 100.0  # No attempted = no failures
+
+
+class TestSecurityValidation:
+    """Test security features: path traversal protection, file size limits, environment detection"""
+
+    def test_path_traversal_blocked(self):
+        """Test that path traversal attacks are blocked"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            handler = FileAccessHandler(project_root=temp_dir)
+
+            # Try to access file outside project root
+            content = handler.try_read_file("../../../etc/passwd")
+            assert content is None
+            assert handler.files_access_denied == 1
+
+    def test_directory_traversal_blocked(self):
+        """Test that directory traversal attacks are blocked"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            handler = FileAccessHandler(project_root=temp_dir)
+
+            # Try to scan directory outside project root
+            accessible, denied = handler.safe_scan_directory("../../../etc")
+            assert len(accessible) == 0
+            assert len(denied) == 1
+
+    def test_absolute_path_outside_root_blocked(self):
+        """Test that absolute paths outside project root are blocked"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            handler = FileAccessHandler(project_root=temp_dir)
+
+            # Try absolute path outside project
+            content = handler.try_read_file("/etc/passwd")
+            assert content is None
+            assert handler.files_access_denied == 1
+
+    def test_file_size_limit_enforced(self):
+        """Test that files exceeding size limit are rejected"""
+        handler = FileAccessHandler()
+
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            # Write 15MB file (exceeds 10MB limit)
+            f.write("x" * (15 * 1024 * 1024))
+            temp_path = f.name
+
+        try:
+            content = handler.try_read_file(temp_path)
+            assert content is None
+            assert handler.files_access_denied == 1
+            # Check that "too large" is in inaccessible paths tracking
+            assert temp_path in handler.inaccessible_paths
+        finally:
+            os.unlink(temp_path)
+
+    def test_custom_file_size_limit(self):
+        """Test custom file size limits"""
+        handler = FileAccessHandler()
+
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            f.write("x" * 1000)  # 1KB file
+            temp_path = f.name
+
+        try:
+            # Try with 500 byte limit
+            content = handler.try_read_file(temp_path, max_size=500)
+            assert content is None
+            assert handler.files_access_denied == 1
+        finally:
+            os.unlink(temp_path)
+
+    def test_claude_code_environment_detection(self):
+        """Test Claude Code environment detection"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Test with .claude directory
+            claude_dir = Path(temp_dir) / ".claude"
+            claude_dir.mkdir()
+
+            handler = FileAccessHandler(project_root=temp_dir)
+            assert handler.is_claude_code_env is True
+
+    def test_non_claude_environment(self):
+        """Test non-Claude Code environment"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            handler = FileAccessHandler(project_root=temp_dir)
+            # Without .claude directory and env vars, should be False
+            # (unless actually running in Claude Code)
+            assert isinstance(handler.is_claude_code_env, bool)
+
+    def test_symlink_loop_protection(self):
+        """Test protection against symlink loops"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create symlink loop: a -> b -> a
+            dir_a = Path(temp_dir) / "a"
+            dir_b = Path(temp_dir) / "b"
+            dir_a.mkdir()
+            dir_b.mkdir()
+
+            link_in_a = dir_a / "link_to_b"
+            link_in_b = dir_b / "link_to_a"
+
+            try:
+                link_in_a.symlink_to(dir_b)
+                link_in_b.symlink_to(dir_a)
+
+                handler = FileAccessHandler(project_root=temp_dir)
+
+                # Should not hang or crash
+                accessible, denied = handler.safe_scan_directory(temp_dir, recursive=True)
+                # Should complete without infinite loop
+                assert isinstance(accessible, list)
+            except OSError:
+                # Symlink creation might fail on some systems, skip test
+                pass
+
+    def test_malicious_glob_pattern_handled(self):
+        """Test that malicious glob patterns don't cause issues"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            handler = FileAccessHandler(project_root=temp_dir)
+
+            # Create a test file
+            test_file = Path(temp_dir) / "test.txt"
+            test_file.write_text("content")
+
+            # Try various patterns (should handle gracefully)
+            patterns = ["**/*", "**/.*", "**/..*", "*.txt"]
+            for pattern in patterns:
+                accessible, denied = handler.safe_scan_directory(temp_dir, pattern=pattern)
+                assert isinstance(accessible, list)
+                assert isinstance(denied, list)

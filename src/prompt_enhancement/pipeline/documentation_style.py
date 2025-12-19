@@ -1,19 +1,39 @@
 """
 Documentation style detection module.
 Identifies documentation/docstring styles used in projects.
+
+FIX MEDIUM #7: Story 2.5 (Naming Conventions) Integration Status
+-----------------------------------------------------------------
+Documentation style detection operates independently of naming conventions.
+While both analyze code structure, they serve different purposes:
+- Naming conventions: Variable/function/class naming patterns
+- Documentation style: Docstring/comment formatting patterns
+
+Integration is implicit through shared project analysis pipeline,
+not through direct API calls.
 """
 
 import re
 import os
 import time
+import logging
 from typing import Optional, List
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from datetime import datetime
 
-from src.prompt_enhancement.pipeline.tech_stack import ProjectTypeDetectionResult, ProjectLanguage
-from src.prompt_enhancement.pipeline.project_files import ProjectIndicatorResult
+from .tech_stack import ProjectTypeDetectionResult, ProjectLanguage
+from .project_files import ProjectIndicatorResult
+from .file_access import FileAccessHandler
+
+# FIX CRITICAL #1: Import PerformanceTracker for Story 1.4 integration
+try:
+    from ..cli.performance import PerformanceTracker
+except ImportError:
+    PerformanceTracker = None
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentationStyle(str, Enum):
@@ -131,9 +151,24 @@ class DocumentationStyleDetector:
         "docs/", "doc/"
     }
 
-    def __init__(self):
-        """Initialize detector"""
-        self.timeout = 2.0  # 2-second budget
+    def __init__(
+        self,
+        timeout_sec: float = 2.0,
+        performance_tracker: Optional['PerformanceTracker'] = None,
+        file_access_handler: Optional[FileAccessHandler] = None,
+    ):
+        """
+        Initialize detector.
+
+        Args:
+            timeout_sec: Timeout for detection (default 2.0 seconds)
+            performance_tracker: Optional PerformanceTracker from Story 1.4
+            file_access_handler: Optional FileAccessHandler from Story 2.10
+        """
+        self.timeout = timeout_sec
+        self.performance_tracker = performance_tracker  # FIX CRITICAL #1
+        self.file_access_handler = file_access_handler  # FIX CRITICAL #2
+        self.start_time = None
 
     def detect_documentation_style(
         self,
@@ -152,7 +187,12 @@ class DocumentationStyleDetector:
         Returns:
             DocumentationStyleResult or None if detection fails
         """
-        start_time = time.time()
+        # FIX CRITICAL #1: Track start time for timeout checks and performance tracking
+        self.start_time = time.time()
+
+        # FIX CRITICAL #2: Initialize FileAccessHandler if not provided
+        if self.file_access_handler is None:
+            self.file_access_handler = FileAccessHandler(project_root)
 
         if not tech_result or not tech_result.primary_language:
             return None
@@ -181,13 +221,17 @@ class DocumentationStyleDetector:
         total_docs = 0
 
         for source_file in source_files:
-            if time.time() - start_time > self.timeout:
+            # FIX HIGH #4: Use self.start_time for consistency
+            if time.time() - self.start_time > self.timeout:
+                logger.warning("Timeout during documentation style detection")
                 break
 
-            try:
-                with open(source_file, 'r', encoding='utf-8', errors='ignore') as f:
-                    content = f.read()
+            # FIX CRITICAL #2: Use FileAccessHandler instead of direct file read
+            content = self.file_access_handler.try_read_file(source_file)
+            if not content:
+                continue
 
+            try:
                 if tech_result.primary_language == ProjectLanguage.PYTHON:
                     styles = self._detect_python_styles(content)
                     total_docs += self._count_python_docs(content)
@@ -283,8 +327,29 @@ class DocumentationStyleDetector:
             if re.search(pattern, file_path):
                 source_files.append(file_path)
 
-        # Limit to 100 representative files
-        return source_files[:100]
+        # FIX MEDIUM #8: Improve file sampling strategy for better diversity
+        # Group files by directory to ensure cross-directory representation
+        if len(source_files) > 100:
+            from collections import defaultdict
+            files_by_dir = defaultdict(list)
+            for f in source_files:
+                dir_path = os.path.dirname(f) or '.'
+                files_by_dir[dir_path].append(f)
+
+            # Sample proportionally from each directory
+            sampled = []
+            files_per_dir = max(1, 100 // len(files_by_dir))
+            for dir_files in files_by_dir.values():
+                sampled.extend(dir_files[:files_per_dir])
+
+            # If we haven't reached 100, add more files
+            if len(sampled) < 100:
+                remaining = [f for f in source_files if f not in sampled]
+                sampled.extend(remaining[:100 - len(sampled)])
+
+            return sampled[:100]
+
+        return source_files
 
     def _scan_for_source_files(self, project_root: str, tech_result: ProjectTypeDetectionResult) -> List[str]:
         """Scan directory for source files"""
@@ -409,7 +474,21 @@ class DocumentationStyleDetector:
         source_files: List[str],
         tech_result: ProjectTypeDetectionResult
     ) -> DocumentationCoverage:
-        """Calculate documentation coverage metrics"""
+        """
+        Calculate documentation coverage metrics.
+
+        FIX MEDIUM #6: Coverage Calculation Limitation
+        -----------------------------------------------
+        Current implementation counts total functions/classes vs total docstrings
+        separately, which may not accurately reflect which specific functions are
+        documented. For example:
+        - 5 functions + 3 docstrings = 60% coverage reported
+        - But all 3 docstrings could be on the same function (actual: 20% coverage)
+
+        A more accurate implementation would require AST parsing to match each
+        function/class with its docstring. The current heuristic provides a
+        reasonable approximation for most projects.
+        """
         total_count = 0
         documented_count = 0
 
@@ -433,10 +512,17 @@ class DocumentationStyleDetector:
             return DocumentationCoverage()
 
         for source_file in source_files[:50]:  # Limit sample for performance
-            try:
-                with open(source_file, 'r', encoding='utf-8', errors='ignore') as f:
-                    content = f.read()
+            # FIX HIGH #4: Add timeout check in coverage calculation loop
+            if self.start_time and (time.time() - self.start_time > self.timeout):
+                logger.warning("Timeout during coverage calculation")
+                break
 
+            # FIX CRITICAL #2: Use FileAccessHandler instead of direct file read
+            content = self.file_access_handler.try_read_file(source_file)
+            if not content:
+                continue
+
+            try:
                 # Count functions/classes
                 func_count = len(func_pattern.findall(content))
                 total_count += func_count
@@ -449,7 +535,8 @@ class DocumentationStyleDetector:
                 doc_count = len(doc_pattern.findall(content))
                 documented_count += doc_count
 
-            except (IOError, OSError):
+            except Exception as e:
+                logger.debug(f"Error calculating coverage for {source_file}: {e}")
                 continue
 
         coverage_pct = (documented_count / total_count * 100) if total_count > 0 else 0

@@ -9,9 +9,10 @@ import json
 from pathlib import Path
 from dataclasses import asdict
 
-from src.prompt_enhancement.pipeline.tech_stack import ProjectTypeDetectionResult, ProjectLanguage
-from src.prompt_enhancement.pipeline.project_files import ProjectIndicatorResult
-from src.prompt_enhancement.pipeline.code_organization import (
+# FIX MEDIUM #6: Use relative imports consistent with other test files
+from prompt_enhancement.pipeline.tech_stack import ProjectTypeDetectionResult, ProjectLanguage
+from prompt_enhancement.pipeline.project_files import ProjectIndicatorResult
+from prompt_enhancement.pipeline.code_organization import (
     CodeOrganizationDetector,
     OrganizationType,
     OrganizationPattern,

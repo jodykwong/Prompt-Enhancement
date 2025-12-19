@@ -385,10 +385,10 @@ class TestFactorAnalysis:
             indicator_files_confidence=0.85,
             git_history_confidence=0.70,
             fingerprinting_confidence=0.80,
-            naming_conventions_confidence=0.75,
+            naming_conventions_confidence=0.80,  # Changed to test calculation
             test_framework_confidence=0.90,
+            code_organization_confidence=0.60,  # Added to test code_standards calculation
             documentation_style_confidence=0.65,
-            code_organization_confidence=0.88,
         )
 
         assert result is not None
@@ -640,3 +640,97 @@ class TestEdgeCases:
         assert result.overall_confidence is not None
         # Should not crash and should handle gracefully
         assert 0.0 <= result.overall_confidence <= 1.0
+
+
+class TestCriticalBugFixes:
+    """Tests for critical bug fixes from code review"""
+
+    def test_code_standards_confidence_calculation_fix(self):
+        """
+        Test fix for CRITICAL operator precedence bug in code_standards_confidence.
+
+        Bug was: (scores.get("naming") or 0.0 + scores.get("org") or 0.0) / 2
+        Which evaluated as: (scores.get("naming") or (0.0 + scores.get("org")) or 0.0) / 2
+
+        Fixed to: ((scores.get("naming") or 0.0) + (scores.get("org") or 0.0)) / 2
+        """
+        aggregator = StandardsConfidenceAggregator()
+
+        result = aggregator.aggregate_confidence(
+            naming_conventions_confidence=0.8,
+            code_organization_confidence=0.6,
+        )
+
+        assert result is not None
+        assert result.factor_analysis is not None
+
+        # With the fix, code_standards = (0.8 + 0.6) / 2 = 0.7
+        # Without the fix, it would be 0.8 / 2 = 0.4 (WRONG!)
+        expected = 0.7
+        actual = result.factor_analysis.code_standards_confidence
+
+        assert actual == pytest.approx(expected, abs=0.01), \
+            f"Expected {expected}, got {actual}. Operator precedence bug may still exist!"
+
+    def test_trend_tracking_single_run(self):
+        """Test AC6: Trend tracking with single run (no history)"""
+        aggregator = StandardsConfidenceAggregator()
+
+        result = aggregator.aggregate_confidence(
+            project_type_confidence=0.85,
+        )
+
+        # First run should have no trend data (not enough history)
+        assert result.trend_data is None
+
+    def test_trend_tracking_multiple_runs_improving(self):
+        """Test AC6: Trend tracking detects improving confidence"""
+        aggregator = StandardsConfidenceAggregator()
+
+        # First run: low confidence
+        result1 = aggregator.aggregate_confidence(
+            project_type_confidence=0.60,
+        )
+
+        # Second run: higher confidence (improving)
+        result2 = aggregator.aggregate_confidence(
+            project_type_confidence=0.75,
+        )
+
+        assert result2.trend_data is not None
+        assert result2.trend_data.improving is True
+        assert result2.trend_data.degrading is False
+        assert result2.trend_data.trend_direction == "improving"
+        assert len(result2.trend_data.confidence_history) == 2
+
+    def test_trend_tracking_multiple_runs_degrading(self):
+        """Test AC6: Trend tracking detects degrading confidence"""
+        aggregator = StandardsConfidenceAggregator()
+
+        # First run: high confidence
+        result1 = aggregator.aggregate_confidence(
+            project_type_confidence=0.85,
+        )
+
+        # Second run: lower confidence (degrading)
+        result2 = aggregator.aggregate_confidence(
+            project_type_confidence=0.65,
+        )
+
+        assert result2.trend_data is not None
+        assert result2.trend_data.improving is False
+        assert result2.trend_data.degrading is True
+        assert result2.trend_data.trend_direction == "degrading"
+
+    def test_trend_tracking_consistency_detection(self):
+        """Test AC6: Trend tracking detects consistent results"""
+        aggregator = StandardsConfidenceAggregator()
+
+        # Multiple runs with similar confidence (consistent)
+        aggregator.aggregate_confidence(project_type_confidence=0.80)
+        aggregator.aggregate_confidence(project_type_confidence=0.81)
+        result = aggregator.aggregate_confidence(project_type_confidence=0.79)
+
+        assert result.trend_data is not None
+        assert result.trend_data.consistent is True
+        assert result.trend_data.trend_direction == "stable"

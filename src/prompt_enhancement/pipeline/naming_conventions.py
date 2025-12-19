@@ -16,6 +16,7 @@ from typing import Dict, List, Optional, Set
 
 from .tech_stack import ProjectLanguage, ProjectTypeDetectionResult
 from .project_files import ProjectIndicatorResult
+from ..cli.performance import PerformanceTracker  # FIX HIGH #3
 
 
 logger = logging.getLogger(__name__)
@@ -121,7 +122,9 @@ class NamingConventionDetector:
 
     # Regex patterns for convention classification
     SNAKE_CASE_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
-    CAMEL_CASE_PATTERN = re.compile(r"^[a-z][a-zA-Z0-9]*$")
+    # FIX HIGH #1: camelCase must have at least one uppercase letter
+    # Old pattern matched pure lowercase like "get" incorrectly as camelCase
+    CAMEL_CASE_PATTERN = re.compile(r"^[a-z][a-z0-9]*[A-Z][a-zA-Z0-9]*$")
     PASCAL_CASE_PATTERN = re.compile(r"^[A-Z][a-zA-Z0-9]*$")
     KEBAB_CASE_PATTERN = re.compile(r"^[a-z][a-z0-9\-]*$")
     UPPER_SNAKE_CASE_PATTERN = re.compile(r"^[A-Z][A-Z0-9_]*$")
@@ -146,6 +149,7 @@ class NamingConventionDetector:
         project_root: Path,
         timeout_sec: float = DEFAULT_TIMEOUT_SEC,
         max_files: int = MAX_FILES,
+        performance_tracker: Optional[PerformanceTracker] = None,  # FIX HIGH #3
     ):
         """
         Initialize naming convention detector.
@@ -154,10 +158,12 @@ class NamingConventionDetector:
             project_root: Root directory to analyze
             timeout_sec: Timeout for detection (default 2.0 seconds)
             max_files: Maximum files to process (default 100)
+            performance_tracker: Optional PerformanceTracker from Story 1.4 (FIX HIGH #3)
         """
         self.project_root = Path(project_root)
         self.timeout_sec = timeout_sec
         self.max_files = max_files
+        self.performance_tracker = performance_tracker  # FIX HIGH #3
         self.start_time = time.perf_counter()
 
     # ========================================================================
@@ -179,13 +185,19 @@ class NamingConventionDetector:
         Returns:
             NamingConventionResult with detected patterns, or None on failure
         """
+        # FIX HIGH #3: Start performance tracking
+        if self.performance_tracker:
+            self.performance_tracker.start_phase("naming_conventions")
+
         try:
             if self._is_timeout():
                 logger.warning("Naming convention detection timeout")
+                if self.performance_tracker:
+                    self.performance_tracker.end_phase("naming_conventions")
                 return None
 
             # Sample representative files
-            sampled_files = self._sample_files(files_result, self.max_files)
+            sampled_files = self._sample_files(files_result, self.max_files, tech_result)
             if not sampled_files:
                 logger.warning("No files to sample for naming convention detection")
                 return None
@@ -212,14 +224,23 @@ class NamingConventionDetector:
                 return self._create_empty_result(len(sampled_files), files_result)
 
             # Categorize conventions
-            return self._create_result_from_occurrences(
+            result = self._create_result_from_occurrences(
                 all_occurrences,
                 len(sampled_files),
                 len(files_result.files_found) if files_result.files_found else 0,
             )
 
+            # FIX HIGH #3: End performance tracking
+            if self.performance_tracker:
+                self.performance_tracker.end_phase("naming_conventions")
+
+            return result
+
         except Exception as e:
             logger.error(f"Error detecting naming conventions: {e}", exc_info=True)
+            # FIX HIGH #3: End performance tracking even on error
+            if self.performance_tracker:
+                self.performance_tracker.end_phase("naming_conventions")
             return None
 
     # ========================================================================
@@ -230,13 +251,18 @@ class NamingConventionDetector:
         self,
         files_result: ProjectIndicatorResult,
         max_samples: int,
+        tech_result: Optional[ProjectTypeDetectionResult] = None,
     ) -> List[Path]:
         """
-        Sample representative source files.
+        Sample representative source files with multilingual support.
+
+        FIX MEDIUM #4: Adds multilingual file sampling to ensure representative
+        coverage when multiple languages are present in the project.
 
         Args:
             files_result: Project indicator result with file list
             max_samples: Maximum number of files to sample
+            tech_result: Optional tech stack result for language detection
 
         Returns:
             List of sampled file paths
@@ -267,8 +293,15 @@ class NamingConventionDetector:
 
                 source_files.append(file_path)
 
-            # Limit to max_samples
-            sampled = source_files[:max_samples]
+            # FIX MEDIUM #4: Multilingual file sampling
+            # If project has multiple languages, sample proportionally from each
+            if tech_result and tech_result.secondary_languages:
+                sampled = self._sample_multilingual(
+                    source_files, max_samples, tech_result
+                )
+            else:
+                # Single language: simple sampling
+                sampled = source_files[:max_samples]
 
             # Convert to full paths (handle both strings and Path objects)
             result = []
@@ -284,6 +317,95 @@ class NamingConventionDetector:
         except Exception as e:
             logger.debug(f"Error sampling files: {e}")
             return []
+
+    def _sample_multilingual(
+        self,
+        source_files: List,
+        max_samples: int,
+        tech_result: ProjectTypeDetectionResult,
+    ) -> List:
+        """
+        Sample files from multiple languages proportionally.
+
+        FIX MEDIUM #4: Ensures representative sampling across all languages
+        in a multilingual project (AC5: "Includes multiple file types if multilingual").
+
+        Strategy:
+        - Primary language: 60% of samples
+        - Secondary languages: 40% split equally
+
+        Args:
+            source_files: List of source files to sample from
+            max_samples: Maximum number of files to sample
+            tech_result: Tech stack result with language information
+
+        Returns:
+            List of sampled files with representation from all languages
+        """
+        # Language extension mapping
+        lang_extensions = {
+            ProjectLanguage.PYTHON: {'.py'},
+            ProjectLanguage.NODEJS: {'.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs'},
+            ProjectLanguage.GO: {'.go'},
+            ProjectLanguage.RUST: {'.rs'},
+            ProjectLanguage.JAVA: {'.java'},
+            ProjectLanguage.CSHARP: {'.cs'},
+        }
+
+        # Group files by language
+        files_by_lang: Dict[ProjectLanguage, List] = {
+            tech_result.primary_language: []
+        }
+        for lang in tech_result.secondary_languages:
+            files_by_lang[lang] = []
+
+        # Classify files by language
+        unclassified = []
+        for file_path in source_files:
+            file_str = str(file_path)
+            suffix = Path(file_str).suffix.lower()
+
+            classified = False
+            for lang, extensions in lang_extensions.items():
+                if suffix in extensions and lang in files_by_lang:
+                    files_by_lang[lang].append(file_path)
+                    classified = True
+                    break
+
+            if not classified:
+                unclassified.append(file_path)
+
+        # Calculate sampling quotas
+        primary_quota = int(max_samples * 0.6)
+        num_secondary = len(tech_result.secondary_languages)
+        secondary_quota_per_lang = int((max_samples * 0.4) / num_secondary) if num_secondary > 0 else 0
+
+        # Sample from each language
+        sampled = []
+
+        # Primary language
+        primary_files = files_by_lang.get(tech_result.primary_language, [])
+        sampled.extend(primary_files[:primary_quota])
+
+        # Secondary languages
+        for lang in tech_result.secondary_languages:
+            lang_files = files_by_lang.get(lang, [])
+            sampled.extend(lang_files[:secondary_quota_per_lang])
+
+        # Fill remaining quota with unclassified files
+        remaining = max_samples - len(sampled)
+        if remaining > 0:
+            sampled.extend(unclassified[:remaining])
+
+        # If we didn't reach max_samples, top up from any remaining files
+        if len(sampled) < max_samples:
+            remaining = max_samples - len(sampled)
+            all_remaining = []
+            for lang_files in files_by_lang.values():
+                all_remaining.extend(lang_files[secondary_quota_per_lang:])
+            sampled.extend(all_remaining[:remaining])
+
+        return sampled[:max_samples]
 
     # ========================================================================
     # Pattern Extraction
@@ -352,34 +474,37 @@ class NamingConventionDetector:
             match = self.PYTHON_FUNCTION_PATTERN.match(line)
             if match:
                 identifier = match.group(1)
-                if identifier and not identifier.startswith("_"):
-                    convention = self._classify_convention(identifier)
-                    patterns.append(
-                        ConventionOccurrence(
-                            convention_type=convention,
-                            identifier=identifier,
-                            category=IdentifierCategory.FUNCTION,
-                            file_path=str(file_path),
-                            line_number=line_num,
+                # FIX MEDIUM #5: Skip single-letter identifiers
+                if identifier and len(identifier) > 1:
+                    if not identifier.startswith("_"):
+                        convention = self._classify_convention(identifier)
+                        patterns.append(
+                            ConventionOccurrence(
+                                convention_type=convention,
+                                identifier=identifier,
+                                category=IdentifierCategory.FUNCTION,
+                                file_path=str(file_path),
+                                line_number=line_num,
+                            )
                         )
-                    )
-                elif identifier and identifier.startswith("_"):
-                    convention = self._classify_convention(identifier)
-                    patterns.append(
-                        ConventionOccurrence(
-                            convention_type=convention,
-                            identifier=identifier,
-                            category=IdentifierCategory.PRIVATE,
-                            file_path=str(file_path),
-                            line_number=line_num,
+                    else:
+                        convention = self._classify_convention(identifier)
+                        patterns.append(
+                            ConventionOccurrence(
+                                convention_type=convention,
+                                identifier=identifier,
+                                category=IdentifierCategory.PRIVATE,
+                                file_path=str(file_path),
+                                line_number=line_num,
+                            )
                         )
-                    )
 
             # Classes
             match = self.PYTHON_CLASS_PATTERN.match(line)
             if match:
                 identifier = match.group(1)
-                if identifier:
+                # FIX MEDIUM #5: Skip single-letter identifiers
+                if identifier and len(identifier) > 1:
                     convention = self._classify_convention(identifier)
                     patterns.append(
                         ConventionOccurrence(
@@ -429,7 +554,8 @@ class NamingConventionDetector:
             match = self.JS_FUNCTION_PATTERN.search(line)
             if match:
                 identifier = match.group(1)
-                if identifier and not identifier.startswith("_"):
+                # FIX MEDIUM #5: Skip single-letter identifiers
+                if identifier and len(identifier) > 1 and not identifier.startswith("_"):
                     convention = self._classify_convention(identifier)
                     patterns.append(
                         ConventionOccurrence(
@@ -467,7 +593,8 @@ class NamingConventionDetector:
             match = self.JS_CLASS_PATTERN.search(line)
             if match:
                 identifier = match.group(1)
-                if identifier:
+                # FIX MEDIUM #5: Skip single-letter identifiers
+                if identifier and len(identifier) > 1:
                     convention = self._classify_convention(identifier)
                     patterns.append(
                         ConventionOccurrence(
@@ -494,7 +621,8 @@ class NamingConventionDetector:
             match = self.GO_PATTERN.search(line)
             if match:
                 identifier = match.group(1)
-                if identifier:
+                # FIX MEDIUM #5: Skip single-letter identifiers
+                if identifier and len(identifier) > 1:
                     convention = self._classify_convention(identifier)
                     is_exported = identifier[0].isupper()
                     patterns.append(
@@ -511,7 +639,8 @@ class NamingConventionDetector:
             match = self.GO_STRUCT_PATTERN.search(line)
             if match:
                 identifier = match.group(1)
-                if identifier:
+                # FIX MEDIUM #5: Skip single-letter identifiers
+                if identifier and len(identifier) > 1:
                     convention = self._classify_convention(identifier)
                     patterns.append(
                         ConventionOccurrence(
@@ -538,7 +667,8 @@ class NamingConventionDetector:
             match = self.JAVA_CLASS_PATTERN.search(line)
             if match:
                 identifier = match.group(1)
-                if identifier:
+                # FIX MEDIUM #5: Skip single-letter identifiers
+                if identifier and len(identifier) > 1:
                     convention = self._classify_convention(identifier)
                     patterns.append(
                         ConventionOccurrence(
@@ -635,7 +765,8 @@ class NamingConventionDetector:
         function_occurrences = [o for o in occurrences if o.category == IdentifierCategory.FUNCTION]
         class_occurrences = [o for o in occurrences if o.category == IdentifierCategory.CLASS]
         variable_occurrences = [o for o in occurrences if o.category == IdentifierCategory.VARIABLE]
-        constant_occurrences = [o for o in occurrences if o.convention_type == NamingConventionType.UPPER_SNAKE_CASE]
+        # FIX HIGH #2: Use category field, not convention_type (AC4 context-aware detection)
+        constant_occurrences = [o for o in occurrences if o.category == IdentifierCategory.CONSTANT]
 
         # Compute frequencies
         overall_frequencies = self._compute_frequencies(occurrences)
@@ -784,6 +915,13 @@ class NamingConventionDetector:
     # ========================================================================
 
     def _is_timeout(self) -> bool:
-        """Check if timeout has been exceeded."""
-        elapsed = time.perf_counter() - self.start_time
-        return elapsed > self.timeout_sec
+        """
+        Check if timeout has been exceeded.
+
+        FIX MEDIUM #7: Use PerformanceTracker if available for consistent timeout checking.
+        """
+        if self.performance_tracker:
+            return self.performance_tracker.check_soft_timeout(self.timeout_sec)
+        else:
+            elapsed = time.perf_counter() - self.start_time
+            return elapsed > self.timeout_sec

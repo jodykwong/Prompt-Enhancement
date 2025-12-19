@@ -3,10 +3,14 @@ Standards confidence scoring and aggregation module.
 Aggregates confidence scores from all detection modules and generates quality metrics.
 """
 
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class QualityGateLevel(str, Enum):
@@ -39,6 +43,17 @@ class FactorAnalysis:
 
 
 @dataclass
+class ConfidenceTrendData:
+    """Historical confidence trend data (AC6)"""
+    timestamps: List[str] = field(default_factory=list)
+    confidence_history: List[float] = field(default_factory=list)
+    improving: bool = False
+    degrading: bool = False
+    consistent: bool = True
+    trend_direction: str = "stable"  # "improving", "degrading", "stable"
+
+
+@dataclass
 class StandardsConfidenceReport:
     """Complete confidence report for standards detection"""
     overall_confidence: float
@@ -48,6 +63,7 @@ class StandardsConfidenceReport:
     low_confidence_standards: List[str] = field(default_factory=list)
     quality_rationale: str = ""
     factor_analysis: Optional[FactorAnalysis] = None
+    trend_data: Optional[ConfidenceTrendData] = None  # AC6: Trend tracking
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
     version: str = "1.0"
 
@@ -76,8 +92,8 @@ class StandardsConfidenceAggregator:
     }
 
     def __init__(self):
-        """Initialize aggregator"""
-        pass
+        """Initialize aggregator with trend tracking support (AC6)"""
+        self._confidence_history: List[Tuple[str, float]] = []  # (timestamp, confidence) pairs
 
     def aggregate_confidence(
         self,
@@ -145,6 +161,11 @@ class StandardsConfidenceAggregator:
         # Perform factor analysis
         factor_analysis = self._perform_factor_analysis(normalized_scores)
 
+        # Track confidence over time (AC6)
+        current_timestamp = datetime.utcnow().isoformat()
+        self._confidence_history.append((current_timestamp, overall_confidence))
+        trend_data = self._analyze_trends()
+
         return StandardsConfidenceReport(
             overall_confidence=overall_confidence,
             quality_gate=quality_gate,
@@ -153,6 +174,7 @@ class StandardsConfidenceAggregator:
             low_confidence_standards=low_confidence_standards,
             quality_rationale=quality_rationale,
             factor_analysis=factor_analysis,
+            trend_data=trend_data,
         )
 
     def _calculate_weighted_confidence(self, scores: Dict[str, Optional[float]]) -> float:
@@ -234,10 +256,10 @@ class StandardsConfidenceAggregator:
         # Identify weakest detectors
         analysis.weakest_detectors = [name for name, _ in sorted_detectors[-3:] if name]
 
-        # Calculate category confidence
+        # Calculate category confidence (FIXED: operator precedence bug)
         analysis.code_standards_confidence = (
-            (scores.get("naming_conventions") or 0.0 + scores.get("code_organization") or 0.0) / 2
-        )
+            (scores.get("naming_conventions") or 0.0) + (scores.get("code_organization") or 0.0)
+        ) / 2
         analysis.testing_standards_confidence = scores.get("test_framework") or 0.0
         analysis.documentation_standards_confidence = scores.get("documentation_style") or 0.0
         analysis.language_detection_confidence = scores.get("project_type") or 0.0
@@ -278,3 +300,47 @@ class StandardsConfidenceAggregator:
             )
 
         return recommendations
+
+    def _analyze_trends(self) -> Optional[ConfidenceTrendData]:
+        """
+        Analyze confidence trends over time (AC6).
+
+        Returns:
+            ConfidenceTrendData with trend analysis or None if insufficient history
+        """
+        if len(self._confidence_history) < 2:
+            # Not enough data for trend analysis
+            return None
+
+        timestamps = [ts for ts, _ in self._confidence_history]
+        confidences = [conf for _, conf in self._confidence_history]
+
+        # Determine trend direction
+        recent_confidence = confidences[-1]
+        older_confidence = confidences[0]
+
+        improving = recent_confidence > older_confidence + 0.05  # >5% improvement
+        degrading = recent_confidence < older_confidence - 0.05  # >5% degradation
+
+        if improving:
+            trend_direction = "improving"
+        elif degrading:
+            trend_direction = "degrading"
+        else:
+            trend_direction = "stable"
+
+        # Check consistency (variance < 0.1)
+        if len(confidences) >= 3:
+            variance = sum((c - recent_confidence) ** 2 for c in confidences) / len(confidences)
+            consistent = variance < 0.01  # Low variance = consistent
+        else:
+            consistent = True
+
+        return ConfidenceTrendData(
+            timestamps=timestamps,
+            confidence_history=confidences,
+            improving=improving,
+            degrading=degrading,
+            consistent=consistent,
+            trend_direction=trend_direction,
+        )

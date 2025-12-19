@@ -13,8 +13,15 @@ from enum import Enum
 from pathlib import Path
 from datetime import datetime
 
-from src.prompt_enhancement.pipeline.tech_stack import ProjectTypeDetectionResult, ProjectLanguage
-from src.prompt_enhancement.pipeline.project_files import ProjectIndicatorResult
+from .tech_stack import ProjectTypeDetectionResult, ProjectLanguage
+from .project_files import ProjectIndicatorResult
+from .file_access import FileAccessHandler
+
+# FIX CRITICAL #1: Import PerformanceTracker
+try:
+    from ..cli.performance import PerformanceTracker
+except ImportError:
+    PerformanceTracker = None
 
 
 class OrganizationType(str, Enum):
@@ -114,9 +121,17 @@ class CodeOrganizationDetector:
         "go.work": "Go workspace",
     }
 
-    def __init__(self):
-        """Initialize detector"""
-        self.timeout = 1.5  # 1.5-second budget
+    def __init__(
+        self,
+        timeout_sec: float = 1.5,
+        performance_tracker: Optional['PerformanceTracker'] = None,
+        file_access_handler: Optional[FileAccessHandler] = None,
+    ):
+        """Initialize detector with Story 1.4 and 2.10 integration"""
+        self.timeout = timeout_sec
+        self.performance_tracker = performance_tracker
+        self.file_access_handler = file_access_handler
+        self.start_time = None
 
     def detect_code_organization(
         self,
@@ -181,9 +196,15 @@ class CodeOrganizationDetector:
     def _build_directory_tree(self, project_root: str, max_depth: int = 10) -> Dict:
         """Build a tree of directory structure"""
         tree = {}
+        self.start_time = time.time()
 
         try:
-            for root, dirs, files in os.walk(project_root, topdown=True):
+            # FIX MEDIUM #7: Add followlinks=False to prevent symlink loops
+            for root, dirs, files in os.walk(project_root, topdown=True, followlinks=False):
+                # FIX HIGH #4: Check timeout in os.walk loop
+                if self.start_time and (time.time() - self.start_time > self.timeout):
+                    break
+
                 # Limit depth
                 depth = root[len(project_root):].count(os.sep)
                 if depth > max_depth:
@@ -246,6 +267,9 @@ class CodeOrganizationDetector:
         # Check package.json workspaces (JavaScript/Node)
         if tech_result.primary_language == ProjectLanguage.NODEJS:
             if "package.json" in root_files:
+                # FIX HIGH #5: Check timeout before file read
+                if self.start_time and (time.time() - self.start_time > self.timeout):
+                    return OrganizationType.SINGLE_REPO, 0.5
                 try:
                     pkg_path = Path(project_root) / "package.json"
                     with open(pkg_path, 'r') as f:
@@ -258,6 +282,9 @@ class CodeOrganizationDetector:
         # Check pom.xml modules (Java/Maven)
         if tech_result.primary_language == ProjectLanguage.JAVA:
             if "pom.xml" in root_files:
+                # FIX HIGH #5: Check timeout before file read
+                if self.start_time and (time.time() - self.start_time > self.timeout):
+                    return OrganizationType.SINGLE_REPO, 0.5
                 try:
                     pom_path = Path(project_root) / "pom.xml"
                     with open(pom_path, 'r') as f:
@@ -367,6 +394,9 @@ class CodeOrganizationDetector:
 
         # For JavaScript, check workspaces
         if tech_result.primary_language == ProjectLanguage.NODEJS:
+            # FIX HIGH #5: Check timeout before file read
+            if self.start_time and (time.time() - self.start_time > self.timeout):
+                return {"names": module_names}
             try:
                 pkg_path = Path(project_root) / "package.json"
                 with open(pkg_path, 'r') as f:

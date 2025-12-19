@@ -213,7 +213,12 @@ class TestRecentCommitAnalysis:
 
             assert len(result.recent_commits) > 0
             # Recent commits should be in reverse order (newest first)
-            assert "Add feature" in result.recent_commits[-1] or "Add feature" in result.recent_commits[0]
+            # FIX: recent_commits now returns CommitInfo objects, check .message attribute
+            assert "Add feature" in result.recent_commits[-1].message or "Add feature" in result.recent_commits[0].message
+            # Verify commit info structure (FIX #4: AC2 - authors and dates)
+            assert result.recent_commits[0].author is not None
+            assert result.recent_commits[0].date is not None
+            assert result.recent_commits[0].hash is not None
 
     def test_extract_commit_authors(self):
         """Should extract author names from commits - AC2."""
@@ -461,7 +466,10 @@ class TestLargeRepositoryHandling:
             result = detector.extract_git_history()
             elapsed = time.perf_counter() - start_time
 
-            assert elapsed < 2.0  # Must complete within 2 seconds
+            # FIX #6: Explicit timing assertion for AC4 2-second budget
+            assert elapsed < 2.0, f"Git history extraction took {elapsed:.3f}s, exceeds 2.0s budget"
+            assert result is not None, "Result should not be None"
+            assert result.git_available is True, "Git should be available"
 
 
 class TestErrorHandling:
@@ -747,3 +755,48 @@ class TestIntegration:
             assert detector.project_root == Path(tmpdir)
             assert detector.detected_language == ProjectLanguage.PYTHON
             assert detector.max_commits == 50
+
+    def test_performance_tracker_integration(self):
+        """Should integrate with PerformanceTracker from Story 1.4 (FIX #7 & #6)."""
+        from src.prompt_enhancement.cli.performance import PerformanceTracker
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Initialize repo
+            subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@example.com"],
+                cwd=tmpdir,
+                capture_output=True,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test User"],
+                cwd=tmpdir,
+                capture_output=True,
+                check=True,
+            )
+
+            # Create a commit
+            Path(tmpdir, "test.txt").write_text("test content")
+            subprocess.run(["git", "add", "."], cwd=tmpdir, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "Initial commit"],
+                cwd=tmpdir,
+                capture_output=True,
+                check=True,
+            )
+
+            # Use PerformanceTracker
+            tracker = PerformanceTracker()
+            detector = GitHistoryDetector(
+                Path(tmpdir),
+                performance_tracker=tracker
+            )
+
+            result = detector.extract_git_history()
+
+            assert result is not None
+            assert result.git_available is True
+            # FIX #6 & #7: Verify PerformanceTracker tracked the git_history phase
+            assert "git_history" in tracker.phase_times, "PerformanceTracker should track git_history phase"
+            assert tracker.phase_times["git_history"] < 2.0, f"Git history took {tracker.phase_times['git_history']:.3f}s, exceeds 2.0s budget"

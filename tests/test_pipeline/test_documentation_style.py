@@ -9,9 +9,10 @@ import os
 from pathlib import Path
 from dataclasses import asdict
 
-from src.prompt_enhancement.pipeline.tech_stack import ProjectTypeDetectionResult, ProjectLanguage
-from src.prompt_enhancement.pipeline.project_files import ProjectIndicatorResult
-from src.prompt_enhancement.pipeline.documentation_style import (
+# FIX HIGH #5: Use relative imports consistent with other test files
+from prompt_enhancement.pipeline.tech_stack import ProjectTypeDetectionResult, ProjectLanguage
+from prompt_enhancement.pipeline.project_files import ProjectIndicatorResult
+from prompt_enhancement.pipeline.documentation_style import (
     DocumentationStyleDetector,
     DocumentationStyle,
     DocumentationCoverage,

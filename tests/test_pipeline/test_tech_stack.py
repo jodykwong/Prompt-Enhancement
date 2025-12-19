@@ -291,6 +291,58 @@ sourceCompatibility = '11'
             assert result.primary_language == ProjectLanguage.JAVA
 
 
+class TestCSharpProjectDetection:
+    """Test C# project detection."""
+
+    def test_detect_csharp_with_csproj(self):
+        """Should detect C# from .csproj file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csproj_file = Path(tmpdir) / "MyApp.csproj"
+            csproj_file.write_text("""<?xml version="1.0"?>
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+</Project>
+""")
+
+            detector = ProjectTypeDetector(tmpdir)
+            result = detector.detect_project_type()
+
+            assert result is not None
+            assert result.primary_language == ProjectLanguage.CSHARP
+
+    def test_detect_csharp_with_sln(self):
+        """Should detect C# from .sln file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sln_file = Path(tmpdir) / "MySolution.sln"
+            sln_file.write_text("""Microsoft Visual Studio Solution File, Format Version 12.00""")
+
+            detector = ProjectTypeDetector(tmpdir)
+            result = detector.detect_project_type()
+
+            assert result is not None
+            assert result.primary_language == ProjectLanguage.CSHARP
+
+    def test_extract_csharp_version_from_csproj(self):
+        """Should extract .NET version from .csproj."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csproj_file = Path(tmpdir) / "MyApp.csproj"
+            csproj_file.write_text("""<?xml version="1.0"?>
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+    </PropertyGroup>
+</Project>
+""")
+
+            detector = ProjectTypeDetector(tmpdir)
+            result = detector.detect_project_type()
+
+            assert result is not None
+            assert "net7.0" in (result.version or "")
+
+
 class TestMixedLanguageDetection:
     """Test mixed language project detection (AC6)."""
 

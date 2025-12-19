@@ -18,6 +18,8 @@ from typing import Dict, List, Optional, Set
 
 from .tech_stack import ProjectLanguage, ProjectTypeDetectionResult
 from .project_files import ProjectIndicatorResult
+from ..cli.performance import PerformanceTracker  # FIX CRITICAL #1
+from .file_access import FileAccessHandler  # FIX CRITICAL #2
 
 
 logger = logging.getLogger(__name__)
@@ -28,8 +30,12 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 
-class TestFrameworkType(Enum):
-    """Supported test frameworks."""
+class FrameworkType(Enum):
+    """
+    Supported test frameworks.
+
+    FIX HIGH #3: Renamed from TestFrameworkType to avoid pytest collection warnings.
+    """
 
     # Python
     PYTEST = "pytest"
@@ -56,27 +62,43 @@ class TestFrameworkType(Enum):
     UNKNOWN = "unknown"
 
 
+# FIX HIGH #3: Backward compatibility alias
+TestFrameworkType = FrameworkType
+
+
 # ============================================================================
 # Data Structures
 # ============================================================================
 
 
 @dataclass
-class TestFrameworkDetection:
-    """Single framework detection result."""
+class FrameworkDetection:
+    """
+    Single framework detection result.
 
-    framework_type: TestFrameworkType
+    FIX HIGH #3: Renamed from TestFrameworkDetection to avoid pytest collection warnings.
+    """
+
+    framework_type: FrameworkType
     confidence: float
     evidence: List[str] = field(default_factory=list)
     version: Optional[str] = None
 
 
-@dataclass
-class TestFrameworkDetectionResult:
-    """Complete test framework detection result."""
+# FIX HIGH #3: Backward compatibility alias
+TestFrameworkDetection = FrameworkDetection
 
-    primary_framework: Optional[TestFrameworkType]
-    detected_frameworks: List[TestFrameworkDetection]
+
+@dataclass
+class FrameworkDetectionResult:
+    """
+    Complete test framework detection result.
+
+    FIX HIGH #3: Renamed from TestFrameworkDetectionResult to avoid pytest collection warnings.
+    """
+
+    primary_framework: Optional[FrameworkType]
+    detected_frameworks: List[FrameworkDetection]
     overall_confidence: float
     test_directories: List[str] = field(default_factory=list)
     test_file_patterns: List[str] = field(default_factory=list)
@@ -85,14 +107,20 @@ class TestFrameworkDetectionResult:
     version: int = 1
 
 
+# FIX HIGH #3: Backward compatibility alias
+TestFrameworkDetectionResult = FrameworkDetectionResult
+
+
 # ============================================================================
-# TestFrameworkDetector Class
+# FrameworkDetector Class (FIX HIGH #3: renamed from TestFrameworkDetector)
 # ============================================================================
 
 
-class TestFrameworkDetector:
+class FrameworkDetector:
     """
     Detects test frameworks used in a project.
+
+    FIX HIGH #3: Renamed from TestFrameworkDetector to avoid pytest collection warnings.
 
     Supports Python, JavaScript/TypeScript, and Java projects.
     Uses multiple detection methods: config files, dependencies, imports, patterns.
@@ -109,6 +137,7 @@ class TestFrameworkDetector:
         TestFrameworkType.PYTEST: ["pytest.ini", "conftest.py", "pyproject.toml"],
         TestFrameworkType.NOSE: [".noserc", "setup.cfg"],
         TestFrameworkType.UNITTEST: [],  # No standard config file
+        TestFrameworkType.HYPOTHESIS: [],  # FIX MEDIUM #7: No standard config file, used with pytest
     }
 
     # JavaScript framework configuration files
@@ -157,6 +186,8 @@ class TestFrameworkDetector:
         self,
         project_root: Path,
         timeout_sec: float = DEFAULT_TIMEOUT_SEC,
+        performance_tracker: Optional[PerformanceTracker] = None,  # FIX CRITICAL #1
+        file_access_handler: Optional[FileAccessHandler] = None,  # FIX CRITICAL #2
     ):
         """
         Initialize test framework detector.
@@ -164,10 +195,14 @@ class TestFrameworkDetector:
         Args:
             project_root: Root directory to analyze
             timeout_sec: Timeout for detection (default 1.5 seconds)
+            performance_tracker: Optional PerformanceTracker from Story 1.4 (FIX CRITICAL #1)
+            file_access_handler: Optional FileAccessHandler from Story 2.10 (FIX CRITICAL #2)
         """
         self.project_root = Path(project_root)
         self.timeout_sec = timeout_sec
         self.start_time = time.perf_counter()
+        self.performance_tracker = performance_tracker  # FIX CRITICAL #1
+        self.file_access_handler = file_access_handler or FileAccessHandler(str(project_root))  # FIX CRITICAL #2
 
     # ========================================================================
     # Main Entry Point
@@ -262,6 +297,7 @@ class TestFrameworkDetector:
                         has_config=self._has_config_file(files_result, TestFrameworkType.PYTEST),
                         has_dependency=self._has_dependency(files_result, "pytest"),
                         has_imports=self._has_import_pattern(files_result, "pytest"),
+                        has_test_files=self._has_test_file_patterns(files_result),  # FIX MEDIUM #8
                     ),
                     evidence=self._get_pytest_evidence(files_result),
                 )
@@ -274,6 +310,7 @@ class TestFrameworkDetector:
                     framework_type=TestFrameworkType.UNITTEST,
                     confidence=self._calculate_framework_confidence(
                         has_imports=self._has_import_pattern(files_result, "unittest"),
+                        has_test_files=self._has_test_file_patterns(files_result),  # FIX MEDIUM #8
                     ),
                     evidence=self._get_unittest_evidence(files_result),
                 )
@@ -287,8 +324,23 @@ class TestFrameworkDetector:
                     confidence=self._calculate_framework_confidence(
                         has_config=self._has_config_file(files_result, TestFrameworkType.NOSE),
                         has_dependency=self._has_dependency(files_result, "nose"),
+                        has_test_files=self._has_test_file_patterns(files_result),  # FIX MEDIUM #8
                     ),
                     evidence=self._get_nose_evidence(files_result),
+                )
+            )
+
+        # FIX MEDIUM #7: Check for hypothesis (property-based testing library)
+        if self._has_hypothesis_indicators(files_result):
+            frameworks.append(
+                TestFrameworkDetection(
+                    framework_type=TestFrameworkType.HYPOTHESIS,
+                    confidence=self._calculate_framework_confidence(
+                        has_dependency=self._has_dependency(files_result, "hypothesis"),
+                        has_imports=self._has_import_pattern(files_result, "hypothesis"),
+                        has_test_files=self._has_test_file_patterns(files_result),  # FIX MEDIUM #8
+                    ),
+                    evidence=self._get_hypothesis_evidence(files_result),
                 )
             )
 
@@ -338,6 +390,30 @@ class TestFrameworkDetector:
             evidence.append("nose configuration file found")
         if self._has_dependency(files_result, "nose"):
             evidence.append("nose in dependencies")
+        return evidence
+
+    def _has_hypothesis_indicators(self, files_result: ProjectIndicatorResult) -> bool:
+        """
+        Check for hypothesis indicators.
+
+        FIX MEDIUM #7: Hypothesis is a property-based testing library often used with pytest.
+        """
+        return (
+            self._has_dependency(files_result, "hypothesis")
+            or self._has_import_pattern(files_result, "hypothesis")
+        )
+
+    def _get_hypothesis_evidence(self, files_result: ProjectIndicatorResult) -> List[str]:
+        """
+        Get evidence for hypothesis detection.
+
+        FIX MEDIUM #7: Added hypothesis framework detection.
+        """
+        evidence = []
+        if self._has_dependency(files_result, "hypothesis"):
+            evidence.append("hypothesis in dependencies")
+        if self._has_import_pattern(files_result, "hypothesis"):
+            evidence.append("hypothesis imports in test files")
         return evidence
 
     # ========================================================================
@@ -447,6 +523,8 @@ class TestFrameworkDetector:
 
         # Check for junit
         if self._has_junit_indicators(files_result):
+            # FIX HIGH #4: Extract JUnit version (4 vs 5)
+            junit_version = self._extract_junit_version(files_result)
             frameworks.append(
                 TestFrameworkDetection(
                     framework_type=TestFrameworkType.JUNIT,
@@ -454,6 +532,7 @@ class TestFrameworkDetector:
                         has_dependency=self._has_dependency(files_result, "junit"),
                     ),
                     evidence=self._get_junit_evidence(files_result),
+                    version=junit_version,  # FIX HIGH #4
                 )
             )
 
@@ -492,6 +571,43 @@ class TestFrameworkDetector:
         if self._has_dependency(files_result, "testng"):
             evidence.append("testng in dependencies")
         return evidence
+
+    def _extract_junit_version(self, files_result: ProjectIndicatorResult) -> Optional[str]:
+        """
+        Extract JUnit version from dependencies.
+
+        FIX HIGH #4: Implements AC3 requirement to distinguish between JUnit 4 and 5.
+
+        Args:
+            files_result: Project indicator result with dependencies
+
+        Returns:
+            Version string ("4", "5", or None if cannot determine)
+        """
+        if not files_result.metadata:
+            return None
+
+        all_deps = (files_result.metadata.dependencies or []) + (files_result.metadata.dev_dependencies or [])
+
+        for dep in all_deps:
+            dep_str = str(dep).lower()
+
+            # JUnit 5 detection (org.junit.jupiter)
+            if "org.junit.jupiter" in dep_str or "junit-jupiter" in dep_str:
+                # Try to extract version number
+                version_match = re.search(r'[:\s]5\.(\d+)', dep_str)
+                if version_match:
+                    return f"5.{version_match.group(1)}"
+                return "5"
+
+            # JUnit 4 detection (junit:junit)
+            if "junit:junit" in dep_str or re.search(r'\bjunit\b.*4\.', dep_str):
+                version_match = re.search(r'[:\s]4\.(\d+)', dep_str)
+                if version_match:
+                    return f"4.{version_match.group(1)}"
+                return "4"
+
+        return None
 
     # ========================================================================
     # Generic Framework Detection
@@ -555,19 +671,48 @@ class TestFrameworkDetector:
 
         return any(dep_name.lower() in str(d).lower() for d in all_deps)
 
+    def _has_test_file_patterns(self, files_result: ProjectIndicatorResult) -> bool:
+        """
+        Check if project contains test files matching standard patterns.
+
+        FIX MEDIUM #8: Helper method to determine has_test_files parameter value.
+        """
+        if not files_result.files_found:
+            return False
+
+        # Check if any files match test file patterns
+        return any("test" in str(f).lower() for f in files_result.files_found)
+
     def _has_import_pattern(self, files_result: ProjectIndicatorResult, module_name: str) -> bool:
-        """Check if test files contain import pattern."""
+        """
+        Check if test files contain import pattern.
+
+        FIX CRITICAL #2: Uses FileAccessHandler for safe file access.
+        FIX HIGH #5: Added timeout check in loop.
+        FIX MEDIUM #6: Limited to first 10 test files for performance.
+
+        Note: This method checks only the first 10 test files to balance accuracy
+        with performance. For most projects, this provides sufficient evidence while
+        avoiding excessive file I/O in large test suites.
+        """
         if not files_result.files_found:
             return False
 
         test_files = [f for f in files_result.files_found if "test" in str(f).lower()]
 
         for test_file in test_files[:10]:  # Check first 10 test files
-            try:
-                full_path = self.project_root / test_file
-                if full_path.exists() and full_path.is_file():
-                    content = full_path.read_text(encoding="utf-8", errors="ignore")
+            # FIX HIGH #5: Check timeout in loop
+            if self._is_timeout():
+                logger.warning("Timeout during import pattern check")
+                break
 
+            try:
+                full_path = str(self.project_root / test_file)
+
+                # FIX CRITICAL #2: Use FileAccessHandler instead of direct read
+                content = self.file_access_handler.try_read_file(full_path)
+
+                if content:
                     # Look for import pattern
                     if re.search(rf"import\s+{module_name}|from\s+{module_name}", content):
                         return True
@@ -664,3 +809,12 @@ class TestFrameworkDetector:
         """Check if timeout has been exceeded."""
         elapsed = time.perf_counter() - self.start_time
         return elapsed > self.timeout_sec
+
+
+# ============================================================================
+# Backward Compatibility Aliases (FIX HIGH #3)
+# ============================================================================
+# These aliases prevent breaking changes for existing code that imports
+# the old class names. The classes were renamed to avoid pytest collection warnings.
+
+TestFrameworkDetector = FrameworkDetector
