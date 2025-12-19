@@ -24,7 +24,7 @@
 #   - optional: 可选
 #   - completed: 已完成
 
-generated: "2025-12-19T15:30:00Z"
+generated: "2025-12-19T16:45:00Z"
 project: "Prompt-Enhancement"
 project_version: "v1.1"
 tracking_system: "file-system"
@@ -61,7 +61,7 @@ epic-2-retrospective: optional
 # ============================================================================
 epic-3: in-progress
 3-1-build-enhancement-prompt-collect-project-context: done  # Completed: 2025-12-19 (28/28 tests passing)
-3-2-call-llm-to-generate-project-aware-enhancement: backlog
+3-2-call-llm-to-generate-project-aware-enhancement: done  # Completed: 2025-12-19 (29/29 tests passing)
 3-3-generate-project-specific-implementation-steps-and-verification-criteria: backlog
 epic-3-retrospective: optional
 
@@ -105,12 +105,12 @@ summary:
   epics_backlog: 4
   epics_in_progress: 1
   epics_done: 2
-  stories_backlog: 12
+  stories_backlog: 11
   stories_drafted: 0
   stories_ready_for_dev: 0
   stories_in_progress: 0
   stories_review: 0
-  stories_done: 15
+  stories_done: 16
 
 # ============================================================================
 # EPIC 依赖关系与执行顺序
