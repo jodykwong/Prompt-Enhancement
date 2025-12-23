@@ -68,9 +68,9 @@ class TestAC1_SingleAPICallWithContext:
         assert len(user_message) > 0
 
     def test_deepseek_uses_openai_compatible_api(self):
-        """Test that DeepSeek uses OpenAI-compatible endpoint."""
+        """Test that DeepSeek uses OpenAI-compatible endpoint with V3.2 reasoner."""
         provider = DeepSeekProvider(api_key="sk-test")
-        assert provider.model == "deepseek-chat"
+        assert provider.model == "deepseek-reasoner"
 
 
 class TestAC2_ResponseValidation:

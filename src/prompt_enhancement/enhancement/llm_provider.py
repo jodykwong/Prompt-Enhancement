@@ -200,18 +200,19 @@ class OpenAIProvider(LLMProvider):
 class DeepSeekProvider(LLMProvider):
     """DeepSeek API provider for LLM enhancements (OpenAI-compatible)."""
 
-    # DeepSeek pricing (estimated)
-    INPUT_COST_PER_1K_TOKENS = 0.003
-    OUTPUT_COST_PER_1K_TOKENS = 0.003
+    # DeepSeek V3.2 pricing (as of Dec 2024)
+    # deepseek-reasoner: $0.0055 per 1K input tokens, $0.022 per 1K output tokens
+    INPUT_COST_PER_1K_TOKENS = 0.0055
+    OUTPUT_COST_PER_1K_TOKENS = 0.022
 
     def __init__(self, api_key: str):
         """
-        Initialize DeepSeek provider.
+        Initialize DeepSeek provider with V3.2 reasoner model.
 
         Args:
             api_key: DeepSeek API key
         """
-        super().__init__(api_key, model="deepseek-chat")
+        super().__init__(api_key, model="deepseek-reasoner")
 
     def call(
         self,
@@ -227,14 +228,14 @@ class DeepSeekProvider(LLMProvider):
         start_time = time.time()
 
         try:
-            # DeepSeek uses OpenAI-compatible API format
+            # DeepSeek uses OpenAI-compatible API format with V3.2 endpoint
             client = OpenAI(
                 api_key=self.api_key,
-                base_url="https://api.deepseek.com/v1",
+                base_url="https://api.deepseek.com",
             )
 
             logger.debug(
-                f"Calling DeepSeek {self.model} via OpenAI-compatible API with "
+                f"Calling DeepSeek {self.model} (V3.2 Reasoning Mode) via OpenAI-compatible API with "
                 f"{len(system_prompt)} chars system + {len(user_message)} chars user"
             )
 
