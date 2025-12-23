@@ -194,6 +194,22 @@ class ContextCollector:
         lines.append(f"- 目录总数: {structure['total_directories']}")
         lines.append("")
 
+        # BMAD 工作流部分
+        structure = context["project_structure"]
+        if "bmad_modules" in structure and structure["bmad_modules"]:
+            lines.append("## BMAD 平台")
+            lines.append(f"此项目基于 BMAD（Business Model Architecture Development）平台")
+            lines.append("- 已安装模块:")
+            for module_name, module_info in sorted(structure["bmad_modules"].items()):
+                if module_info["has_workflows"]:
+                    workflows_str = ", ".join(module_info["workflows"][:3])
+                    if len(module_info["workflows"]) > 3:
+                        workflows_str += f" 等 {len(module_info['workflows'])} 个工作流"
+                    lines.append(f"  - **{module_name}**: {workflows_str}")
+                else:
+                    lines.append(f"  - **{module_name}**: 无活跃工作流")
+            lines.append("")
+
         # Git 历史部分
         git = context["git_history"]
         if git["is_git_repo"]:
