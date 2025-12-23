@@ -60,9 +60,9 @@ epic-2-retrospective: optional
 # EPIC 3: 项目感知的提示增强
 # ============================================================================
 epic-3: done
-3-1-build-enhancement-prompt-collect-project-context: done  # Completed: 2025-12-19 (28/28 tests passing)
-3-2-call-llm-to-generate-project-aware-enhancement: done  # Completed: 2025-12-19 (29/29 tests passing)
-3-3-generate-project-specific-implementation-steps-and-verification-criteria: done  # Completed: 2025-12-19 (40/40 tests passing)
+3-1-build-enhancement-prompt-collect-project-context: done  # Completed: 2025-12-19 (28/28 tests passing) | Code Review: 2025-12-23 (修复异常处理)
+3-2-call-llm-to-generate-project-aware-enhancement: done  # Completed: 2025-12-19 (29/29 tests passing) | Code Review: 2025-12-23 (5个HIGH问题已修复)
+3-3-generate-project-specific-implementation-steps-and-verification-criteria: done  # Completed: 2025-12-19 (40/40 tests passing) | Code Review: 2025-12-23 (通过审查)
 epic-3-retrospective: optional
 
 # ============================================================================

@@ -136,7 +136,8 @@ class OpenAIProvider(LLMProvider):
     ) -> LLMResponse:
         """Make OpenAI API call (AC1, AC3)."""
         import time
-        from openai import OpenAI, AuthenticationError, RateLimitError, Timeout
+        from openai import OpenAI, AuthenticationError, RateLimitError
+        from openai import Timeout as OpenAITimeout
 
         start_time = time.time()
 
@@ -183,7 +184,7 @@ class OpenAIProvider(LLMProvider):
         except RateLimitError as e:
             logger.warning(f"OpenAI rate limited: {e}")
             raise
-        except Timeout as e:
+        except OpenAITimeout as e:
             logger.warning(f"OpenAI call timed out: {e}")
             raise TimeoutError(f"OpenAI API timeout after {timeout_seconds}s") from e
         except Exception as e:
@@ -223,7 +224,8 @@ class DeepSeekProvider(LLMProvider):
     ) -> LLMResponse:
         """Make DeepSeek API call (via OpenAI-compatible endpoint)."""
         import time
-        from openai import OpenAI, AuthenticationError, RateLimitError, Timeout
+        from openai import OpenAI, AuthenticationError, RateLimitError
+        from openai import Timeout as OpenAITimeout
 
         start_time = time.time()
 
@@ -274,7 +276,7 @@ class DeepSeekProvider(LLMProvider):
         except RateLimitError as e:
             logger.warning(f"DeepSeek rate limited: {e}")
             raise
-        except Timeout as e:
+        except OpenAITimeout as e:
             logger.warning(f"DeepSeek call timed out: {e}")
             raise TimeoutError(f"DeepSeek API timeout after {timeout_seconds}s") from e
         except Exception as e:

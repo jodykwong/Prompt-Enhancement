@@ -10,7 +10,8 @@ import os
 import time
 from dataclasses import dataclass
 from typing import Optional, Tuple
-from openai import AuthenticationError, RateLimitError, Timeout
+from openai import AuthenticationError, RateLimitError
+from openai import Timeout as OpenAITimeout
 
 from .context import ProjectContext
 from .prompt_builder import PromptBuilder
@@ -176,7 +177,7 @@ class EnhancementGenerator:
                 raise EnhancementError(
                     f"Enhancement failed: {e}",
                     category="UNEXPECTED_ERROR",
-                )
+                ) from e
 
     def _select_provider(self) -> LLMProvider:
         """
@@ -243,7 +244,7 @@ class EnhancementGenerator:
             except AuthenticationError as e:
                 # Don't retry auth errors
                 logger.error(f"Authentication error: {e}")
-                raise AuthError(str(e))
+                raise AuthError(str(e)) from e
 
             except RateLimitError as e:
                 # Might succeed on retry
@@ -253,9 +254,9 @@ class EnhancementGenerator:
                     continue
                 else:
                     logger.error(f"Rate limit exceeded: {e}")
-                    raise RateLimitErr(str(e))
+                    raise RateLimitErr(str(e)) from e
 
-            except Timeout as e:
+            except OpenAITimeout as e:
                 # Might succeed on retry
                 if attempt < self.MAX_RETRIES:
                     logger.warning(f"Timeout, retrying... ({attempt + 1}/{self.MAX_RETRIES})")
@@ -263,7 +264,7 @@ class EnhancementGenerator:
                     continue
                 else:
                     logger.error(f"Timeout after {timeout_seconds}s")
-                    raise TimeoutErr(f"LLM timeout after {timeout_seconds}s")
+                    raise TimeoutErr(f"LLM timeout after {timeout_seconds}s") from e
 
             except Exception as e:
                 # Unknown error
@@ -273,7 +274,7 @@ class EnhancementGenerator:
                     continue
                 else:
                     logger.error(f"API error: {e}")
-                    raise ServerError(f"LLM API error: {e}")
+                    raise ServerError(f"LLM API error: {e}") from e
 
     def _degrade_to_generic_enhancement(
         self,
