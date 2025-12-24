@@ -174,7 +174,7 @@ async def enhance_prompt(prompt: str) -> dict:
 
 def display_comparison(result: dict):
     """
-    显示原始和增强后的提示词对比，提供菜单给用户选择
+    显示原始和增强后的提示词对比
 
     Args:
         result: 增强结果字典
@@ -188,24 +188,6 @@ def display_comparison(result: dict):
     print("✨ 增强后的提示词")
     print("=" * 70)
     print(result['enhanced'])
-
-    print("\n" + "=" * 70)
-    print("🎯 请选择下一步操作")
-    print("=" * 70)
-    print("""
-[1] ✅ 使用增强版本
-    将上面的"增强后的提示词"复制粘贴给我，我会按增强版本执行
-
-[2] 📝 修改后使用
-    修改"增强后的提示词"，然后复制粘贴给我
-
-[3] 🔄 重新增强
-    输入新的提示词重新增强: /pe [新的提示词]
-
-[4] ❌ 放弃此结果
-    丢弃结果，重新组织需求
-""")
-    print("=" * 70)
     print("\n💡 提示：我现在停止，等待您的选择。请选择上面的选项之一。")
 
 
