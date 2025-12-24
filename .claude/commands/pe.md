@@ -1,7 +1,8 @@
 ---
-description: Enhance your prompts with AI-powered optimization using context and best practices
+description: Enhance prompts and wait for user confirmation before execution
 argument-hint: <prompt_text>
 exec: .claude/commands/scripts/enhance.py
+interactive: true
 ---
 
 # Prompt Enhancement Command - 提示词增强

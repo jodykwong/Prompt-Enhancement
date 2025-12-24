@@ -174,7 +174,7 @@ async def enhance_prompt(prompt: str) -> dict:
 
 def display_comparison(result: dict):
     """
-    显示原始和增强后的提示词对比，提供快速选择菜单
+    显示原始和增强后的提示词对比，提供菜单给用户选择
 
     Args:
         result: 增强结果字典
@@ -190,23 +190,23 @@ def display_comparison(result: dict):
     print(result['enhanced'])
 
     print("\n" + "=" * 70)
-    print("🎯 下一步（快速选择菜单）")
+    print("🎯 请选择下一步操作")
     print("=" * 70)
     print("""
 [1] ✅ 使用增强版本
-    复制上面的"增强后的提示词"，粘贴给我重新执行
+    将上面的"增强后的提示词"复制粘贴给我，我会按增强版本执行
 
 [2] 📝 修改后使用
-    修改"增强后的提示词"的内容，然后粘贴给我重新执行
+    修改"增强后的提示词"，然后复制粘贴给我
 
 [3] 🔄 重新增强
-    输入: /pe [修改后的提示词]
+    输入新的提示词重新增强: /pe [新的提示词]
 
-[4] ❌ 拒绝并重新组织
-    丢弃此结果，重新输入请求
+[4] ❌ 放弃此结果
+    丢弃结果，重新组织需求
 """)
     print("=" * 70)
-    print("\n💡 提示：您完全掌控决定权，我不会自动执行任何操作。")
+    print("\n💡 提示：我现在停止，等待您的选择。请选择上面的选项之一。")
 
 
 def display_error(error_message: str):
@@ -240,6 +240,36 @@ async def main():
     if result['success']:
         # 显示对比和菜单（用户自主选择模式）
         display_comparison(result)
+
+        # 关键：输出特殊的停止信号
+        # 告诉 Claude Code 停止执行，等待用户的菜单选择
+        print("\n" + "!" * 70)
+        print("⏸️  STOP HERE - 请等待用户选择上面的菜单选项")
+        print("!" * 70)
+        print("\n❌ 不要执行原始提示词")
+        print("❌ 不要执行任何自动任务")
+        print("✅ 等待用户的选择")
+        print("\n" + "!" * 70)
+
+        # 等待用户输入选择（尝试从 stdin 读取）
+        try:
+            print("\n请输入选择 (1-4):")
+            choice = input().strip()
+
+            if choice == "1":
+                print("\n✅ 请复制上面的'增强后的提示词'并粘贴给我重新执行")
+            elif choice == "2":
+                print("\n✅ 请修改'增强后的提示词'，然后粘贴给我")
+            elif choice == "3":
+                print("\n✅ 请输入新的提示词: /pe [新提示词]")
+            elif choice == "4":
+                print("\n✅ 已放弃此结果，您可以重新输入请求")
+            else:
+                print("\n❌ 无效选择，请输入 1-4")
+        except EOFError:
+            # 如果无法读取 stdin（非交互环境），只显示菜单
+            print("\n（非交互环境，请根据菜单手动选择）")
+
         sys.exit(0)
     else:
         # 输出错误信息
