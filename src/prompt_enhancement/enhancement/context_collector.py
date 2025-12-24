@@ -17,6 +17,7 @@ from .context import (
     GitHistoryContext,
     Dependency,
 )
+from ..symbol_indexer import SymbolIndexer
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class ProjectContextCollector:
             project_root: Root directory of project (defaults to cwd)
         """
         self.project_root = Path(project_root) if project_root else Path.cwd()
+        self.symbol_indexer = SymbolIndexer(str(self.project_root))
         logger.debug(f"Initialized ProjectContextCollector for {self.project_root}")
 
     def collect_context(
@@ -369,3 +371,43 @@ class ProjectContextCollector:
             warnings.append(f"Collection mode is {collection_mode} - some context unavailable")
 
         return warnings
+
+    def get_file_symbols(self, file_path: str) -> List[Dict[str, Any]]:
+        """
+        Get symbol index for a file (functions, classes, methods).
+
+        Phase 2 Feature: Reduces token usage by replacing full file content
+        with symbol signatures.
+
+        Args:
+            file_path: Path to the file to analyze
+
+        Returns:
+            List of symbol dictionaries with name, type, signature, line number
+        """
+        try:
+            symbols = self.symbol_indexer.get_file_symbols(file_path)
+            return [self._symbol_to_dict(s) for s in symbols]
+        except Exception as e:
+            logger.warning(f"Error getting file symbols for {file_path}: {e}")
+            return []
+
+    def _symbol_to_dict(self, symbol: Any) -> Dict[str, Any]:
+        """
+        Convert ExtractedSymbol to dictionary format.
+
+        Args:
+            symbol: ExtractedSymbol object
+
+        Returns:
+            Dictionary representation of symbol
+        """
+        return {
+            'name': symbol.name,
+            'type': symbol.symbol_type,
+            'signature': symbol.signature,
+            'line': symbol.line_number,
+            'parent_class': symbol.parent_class,
+            'decorators': symbol.decorators if symbol.decorators else [],
+            'docstring': symbol.docstring,
+        }
