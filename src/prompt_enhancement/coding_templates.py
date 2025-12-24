@@ -194,13 +194,31 @@ class CodingTemplateManager:
             self.templates_dir = current_dir / "templates"
 
         self.templates: Dict[str, CodingTemplate] = {}
+        self._template_files: Dict[str, Path] = {}  # Cache template file paths
         self.trigger_matcher = TemplateTrigger()
         self._cache: Dict[str, str] = {}
+        self._templates_loaded = False  # Lazy loading flag
+        self._template_index_loaded = False  # Index of available templates
 
-        self._load_templates()
+    def _ensure_template_index(self) -> None:
+        """
+        Ensure template file index is loaded.
 
-    def _load_templates(self) -> None:
-        """Load all YAML template files from templates directory."""
+        Scans for template files but doesn't parse them yet.
+        This is fast (file listing only, no parsing).
+        """
+        if self._template_index_loaded:
+            return
+
+        self._load_template_index()
+        self._template_index_loaded = True
+
+    def _load_template_index(self) -> None:
+        """
+        Build an index of available template files.
+
+        Fast operation - just lists files, doesn't parse them.
+        """
         if not self.templates_dir.exists():
             self.logger.warning(f"Templates directory not found: {self.templates_dir}")
             return
@@ -208,14 +226,66 @@ class CodingTemplateManager:
         yaml_files = self.templates_dir.glob("*.yaml")
 
         for yaml_file in yaml_files:
-            try:
-                template = self._parse_yaml_template(yaml_file)
-                self.templates[template.task_type] = template
-                self.logger.debug(f"Loaded template: {template.task_type}")
-            except Exception as e:
-                self.logger.error(f"Failed to load template {yaml_file}: {e}")
+            # Extract task type from filename (implement.yaml -> implement)
+            task_type = yaml_file.stem
+            self._template_files[task_type] = yaml_file
+
+        self.logger.debug(f"Indexed {len(self._template_files)} template files")
+
+    def _ensure_templates_loaded(self) -> None:
+        """
+        Ensure all templates are loaded.
+
+        Implements lazy loading - templates are only loaded when first needed,
+        not during initialization. This improves startup performance.
+        """
+        if self._templates_loaded:
+            return
+
+        self._load_templates()
+        self._templates_loaded = True
+
+    def _load_templates(self) -> None:
+        """Load all YAML template files from templates directory."""
+        # First ensure index is loaded
+        self._ensure_template_index()
+
+        # Parse all indexed template files
+        for task_type, yaml_file in self._template_files.items():
+            if task_type not in self.templates:  # Skip already loaded
+                try:
+                    template = self._parse_yaml_template(yaml_file)
+                    self.templates[template.task_type] = template
+                    self.logger.debug(f"Loaded template: {template.task_type}")
+                except Exception as e:
+                    self.logger.error(f"Failed to load template {yaml_file}: {e}")
 
         self.logger.info(f"Loaded {len(self.templates)} templates")
+
+    def _load_template_lazy(self, task_type: str) -> Optional[CodingTemplate]:
+        """
+        Load a single template on demand (lazy loading).
+
+        Faster than loading all templates if only one is needed.
+        """
+        if task_type in self.templates:
+            return self.templates[task_type]
+
+        # Ensure index is loaded to find the file
+        self._ensure_template_index()
+
+        if task_type not in self._template_files:
+            return None
+
+        try:
+            yaml_file = self._template_files[task_type]
+            template = self._parse_yaml_template(yaml_file)
+            self.templates[task_type] = template
+            self.logger.debug(f"Lazy loaded template: {task_type}")
+            return template
+        except Exception as e:
+            self.logger.error(f"Failed to load template {task_type}: {e}")
+            return None
 
     def _parse_yaml_template(self, yaml_path: Path) -> CodingTemplate:
         """
@@ -247,13 +317,20 @@ class CodingTemplateManager:
         """
         Get template by task type.
 
+        Uses lazy loading for individual templates - only loads the requested
+        template, not all templates.
+
         Args:
             task_type: Type of task (implement, fix, refactor, test, review)
 
         Returns:
             CodingTemplate or None
         """
-        return self.templates.get(task_type)
+        # Try lazy loading first (fast if only one template needed)
+        if task_type in self.templates:
+            return self.templates[task_type]
+
+        return self._load_template_lazy(task_type)
 
     def match_template(self, user_input: str) -> Optional[TemplateMatch]:
         """
@@ -265,6 +342,7 @@ class CodingTemplateManager:
         Returns:
             TemplateMatch with matched template or None
         """
+        self._ensure_templates_loaded()
         return self.trigger_matcher.match(user_input, list(self.templates.values()))
 
     def list_templates(self) -> List[str]:
@@ -274,6 +352,7 @@ class CodingTemplateManager:
         Returns:
             List of task type strings
         """
+        self._ensure_templates_loaded()
         return list(self.templates.keys())
 
     def format_template(
@@ -291,7 +370,7 @@ class CodingTemplateManager:
         Returns:
             Formatted template text
         """
-        # Check cache
+        # Check cache first (fast path)
         cache_key = f"{template.task_type}:{language or 'all'}"
         if cache_key in self._cache:
             return self._cache[cache_key]

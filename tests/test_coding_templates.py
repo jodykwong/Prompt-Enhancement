@@ -231,6 +231,8 @@ class TestTemplateTrigger:
         manager = CodingTemplateManager(str(sample_templates_dir))
         trigger = TemplateTrigger()
 
+        # Load templates first to populate manager.templates
+        manager.list_templates()
         match = trigger.match("fix a bug", list(manager.templates.values()))
 
         assert match is not None
@@ -268,15 +270,20 @@ class TestCodingTemplateManager:
         manager = CodingTemplateManager(str(sample_templates_dir))
 
         assert manager.templates_dir == sample_templates_dir
-        assert len(manager.templates) > 0
+        # Templates are lazy-loaded, so list them to populate the dict
+        templates_list = manager.list_templates()
+        assert len(templates_list) > 0
 
     def test_load_templates(self, sample_templates_dir):
         """Test loading templates from directory."""
         manager = CodingTemplateManager(str(sample_templates_dir))
 
-        assert 'implement' in manager.templates
-        assert 'fix' in manager.templates
-        assert 'refactor' in manager.templates
+        # Trigger loading by accessing templates
+        templates_list = manager.list_templates()
+
+        assert 'implement' in templates_list
+        assert 'fix' in templates_list
+        assert 'refactor' in templates_list
 
     def test_get_template_by_type(self, sample_templates_dir):
         """Test getting template by task type."""
@@ -391,6 +398,131 @@ class TestCodingTemplateManager:
         # Manager should handle invalid template gracefully
         # It should either skip it or log an error
         assert len(manager.templates) == 0
+
+
+# ============================================================================
+# Performance Tests
+# ============================================================================
+
+
+class TestPerformance:
+    """Performance and stress tests for template system."""
+
+    def test_manager_initialization_time(self, sample_templates_dir):
+        """Test that manager initialization is fast (lazy loading)."""
+        import time
+
+        start = time.time()
+        manager = CodingTemplateManager(str(sample_templates_dir))
+        init_time = (time.time() - start) * 1000
+
+        # Init should be very fast (<5ms) with lazy loading
+        assert init_time < 5.0
+
+    def test_single_template_load_time(self, sample_templates_dir):
+        """Test that loading a single template is fast."""
+        import time
+
+        manager = CodingTemplateManager(str(sample_templates_dir))
+
+        start = time.time()
+        template = manager.get_template('implement')
+        load_time = (time.time() - start) * 1000
+
+        # Single template load should be <50ms
+        assert load_time < 50.0
+        assert template is not None
+
+    def test_full_template_load_time(self, sample_templates_dir):
+        """Test that loading all templates is reasonably fast."""
+        import time
+
+        manager = CodingTemplateManager(str(sample_templates_dir))
+
+        start = time.time()
+        templates_list = manager.list_templates()
+        load_time = (time.time() - start) * 1000
+
+        # Full load should be <150ms
+        assert load_time < 150.0
+        assert len(templates_list) == 3
+
+    def test_template_formatting_performance(self, sample_templates_dir):
+        """Test template formatting performance."""
+        import time
+
+        manager = CodingTemplateManager(str(sample_templates_dir))
+        template = manager.get_template('implement')
+
+        # First formatting
+        start = time.time()
+        formatted1 = manager.format_template(template)
+        first_time = (time.time() - start) * 1000
+
+        # Cached formatting
+        start = time.time()
+        formatted2 = manager.format_template(template)
+        cached_time = (time.time() - start) * 1000
+
+        # First formatting should be <5ms, cached should be <1ms
+        assert first_time < 5.0
+        assert cached_time < 1.0
+        assert formatted1 == formatted2
+
+    def test_trigger_matching_performance(self, sample_templates_dir):
+        """Test trigger word matching performance."""
+        import time
+
+        manager = CodingTemplateManager(str(sample_templates_dir))
+
+        # Use test inputs that match templates in sample_templates_dir
+        # (which only contains implement, fix, refactor)
+        test_inputs = [
+            "add a new feature",
+            "fix the bug",
+            "refactor the code",
+        ]
+
+        for user_input in test_inputs:
+            start = time.time()
+            match = manager.match_template(user_input)
+            match_time = (time.time() - start) * 1000
+
+            # Trigger matching should be <50ms
+            assert match_time < 50.0
+            assert match is not None
+
+    def test_repeated_access_performance(self, sample_templates_dir):
+        """Test repeated access is fast due to caching."""
+        import time
+
+        manager = CodingTemplateManager(str(sample_templates_dir))
+        template = manager.get_template('implement')
+
+        # Measure 100 repeated accesses
+        start = time.time()
+        for _ in range(100):
+            manager.get_template('implement')
+        total_time = (time.time() - start) * 1000
+
+        # Average per access should be <1ms
+        avg_time = total_time / 100
+        assert avg_time < 1.0
+
+    def test_stress_multiple_managers(self, sample_templates_dir):
+        """Test creating multiple manager instances."""
+        import time
+
+        start = time.time()
+        managers = [CodingTemplateManager(str(sample_templates_dir)) for _ in range(10)]
+        creation_time = (time.time() - start) * 1000
+
+        # Creating 10 managers should be fast (lazy loading)
+        assert creation_time < 100.0
+
+        # All managers should work
+        for manager in managers:
+            assert manager.get_template('implement') is not None
 
 
 # ============================================================================
