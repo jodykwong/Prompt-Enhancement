@@ -1,8 +1,7 @@
 ---
-description: Enhance prompts and wait for user confirmation before execution
+description: Enhance your prompts with AI. IMPORTANT - After execution, I will show you the enhanced prompt and ask for your confirmation before proceeding. You MUST choose from the menu options, not auto-execute.
 argument-hint: <prompt_text>
 exec: .claude/commands/scripts/enhance.py
-interactive: true
 ---
 
 # Prompt Enhancement Command - 提示词增强
