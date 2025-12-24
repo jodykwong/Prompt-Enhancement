@@ -1,0 +1,78 @@
+name: "修复Bug"
+task_type: "fix"
+description: "定位并修复代码中的bug或问题"
+
+triggers:
+  - 修复
+  - 解决
+  - 处理
+  - fix
+  - solve
+  - resolve
+  - bug
+  - issue
+  - error
+
+checklist:
+  - 理解并复现bug现象
+  - 定位问题的根本原因
+  - 编写测试重现问题
+  - 实施修复方案
+  - 验证修复是否有效
+  - 检查是否有其他相关问题
+  - 运行回归测试
+  - 更新文档说明
+
+best_practices:
+  python:
+    - 先写failing test再修复
+    - 使用logging跟踪问题
+    - 修复后验证所有单元测试通过
+    - 考虑是否需要更新类型注解
+    - 检查是否有类似问题存在其他地方
+    - 使用git bisect定位引入bug的提交
+
+  javascript:
+    - 在浏览器开发者工具中调试
+    - 使用console.assert()和logging库
+    - 修复后运行npm test检查
+    - 检查Promise链和错误处理
+    - 使用debugger语句或断点调试
+    - 考虑边界条件
+
+  java:
+    - 使用调试器单步跟踪
+    - 检查null指针异常
+    - 验证异常处理是否正确
+    - 使用日志框架记录问题
+    - 考虑并发问题
+    - 检查资源泄漏
+
+  go:
+    - 检查error返回值处理
+    - 使用log包记录调试信息
+    - 考虑panic和recover
+    - 使用defer确保资源释放
+    - 检查goroutine泄漏
+    - 验证并发安全性
+
+common_pitfalls:
+  - 只修复症状而不解决根本原因
+  - 修复时引入新bug
+  - 没有编写测试验证修复
+  - 忽视类似的其他问题
+  - 修复后没有足够的回归测试
+  - 没有留下调试信息便于日后诊断
+
+acceptance_criteria:
+  - Bug已复现并理解
+  - 修复通过单元测试
+  - 所有回归测试通过
+  - 无新的问题引入
+  - 问题文档已更新
+  - 代码审查通过
+
+examples:
+  - "修复登录超时bug"
+  - "解决内存泄漏问题"
+  - "处理并发下的竞态条件"

@@ -1,0 +1,79 @@
+name: "实现新功能"
+task_type: "implement"
+description: "从零开始实现一个新的功能或组件"
+
+triggers:
+  - 添加
+  - 实现
+  - 创建
+  - 开发
+  - 构建
+  - add
+  - implement
+  - create
+  - build
+  - develop
+
+checklist:
+  - 理解需求和边界条件
+  - 设计接口和数据结构
+  - 考虑边界情况和错误处理
+  - 实现核心逻辑
+  - 添加输入验证
+  - 编写单元测试
+  - 更新相关文档
+  - 考虑性能影响
+
+best_practices:
+  python:
+    - 使用类型注解 (Type Hints)
+    - 添加详细的docstring (Google/NumPy格式)
+    - 遵循PEP 8代码规范
+    - 测试覆盖率至少80%
+    - 使用logging而不是print
+    - 避免可变默认参数
+    - 使用上下文管理器处理资源
+
+  javascript:
+    - 定义接口类型 (TypeScript推荐)
+    - 处理Promise rejection
+    - 添加JSDoc注释
+    - 使用const/let代替var
+    - 避免回调地狱，使用async/await
+    - 进行null/undefined检查
+    - 遵循ESLint规则
+
+  java:
+    - 使用接口定义契约
+    - 实现equals()和hashCode()
+    - 使用try-with-resources
+    - 遵循Java命名规范
+    - 添加Javadoc注释
+    - 考虑线程安全
+
+  go:
+    - 返回error而不是panic
+    - 使用defer清理资源
+    - 遵循Go命名规范
+    - 添加godoc注释
+    - 避免全局变量
+    - 使用context传递取消信号
+
+common_pitfalls:
+  - 没有考虑边界情况
+  - 缺少错误处理
+  - 测试覆盖不足
+  - 忽略性能影响
+  - 文档更新不及时
+
+acceptance_criteria:
+  - 功能符合需求规范
+  - 所有测试通过
+  - 代码覆盖率达标
+  - 通过代码审查
+  - 文档已更新
+
+examples:
+  - "添加用户认证功能"
+  - "实现文件上传API"
+  - "创建数据缓存层"
