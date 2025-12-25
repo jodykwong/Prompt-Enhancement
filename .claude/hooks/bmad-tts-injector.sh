@@ -247,18 +247,19 @@ inject_tts() {
     if [[ -n "$agent_voice" ]]; then
       tts_step="  <step n=\"4.5\" tts=\"agentvibes\">🎤 AGENTVIBES TTS INJECTION:
       - Create context: echo \"${agent_id}\" > .bmad-agent-context (Bash tool)
-      - Speak greeting: .claude/hooks/play-tts.sh \"Hello! I'm ready to help you.\" \"${agent_voice}\" (Bash tool)
+      - Speak greeting: bash .claude/hooks/play-tts.sh \"Hello! I'm ready to help you.\" \"${agent_voice}\" (Bash tool)
       - CRITICAL: Before EVERY response, scan for questions/prompts and speak them using Bash tool</step>"
     else
       tts_step="  <step n=\"4.5\" tts=\"agentvibes\">🎤 AGENTVIBES TTS INJECTION:
       - Create context: echo \"${agent_id}\" > .bmad-agent-context (Bash tool)
-      - Speak greeting: .claude/hooks/play-tts.sh \"Hello! I'm ready to help you.\" (Bash tool)
+      - Speak greeting: bash .claude/hooks/play-tts.sh \"Hello! I'm ready to help you.\" (Bash tool)
       - CRITICAL: Before EVERY response, scan for questions/prompts and speak them using Bash tool</step>"
     fi
 
-    # Insert after step 4 (greeting) - only first match
+    # Insert after step 4 - only first match
+    # Note: Greeting is in step 5, but we inject after step 4 for proper ordering
     awk -v tts="$tts_step" '
-      !done && /<step n="4">.*[Gg]reet/ {
+      !done && /<step n="4">/ {
         print
         print tts
         done=1
@@ -283,7 +284,7 @@ inject_tts() {
       # No changes - step 4 pattern didn't match
       rm "$agent_file.tmp"
       mv "$agent_file.backup-pre-tts" "$agent_file"
-      echo -e "${RED}❌ Could not find step 4 with greeting in: $(basename "$agent_file")${NC}"
+      echo -e "${RED}❌ Could not find step 4 in: $(basename "$agent_file")${NC}"
       return 1
     fi
 
@@ -293,12 +294,12 @@ inject_tts() {
     if [[ -n "$agent_voice" ]]; then
       activation_injection="  - # AGENTVIBES-TTS-INJECTION: STEP 3.5 - Announce activation with TTS
   - STEP 3.5a: Use Bash tool to create context file: echo \"${agent_id}\" > .bmad-agent-context
-  - STEP 3.5b: Use Bash tool to speak: .claude/hooks/play-tts.sh \"Agent ${agent_id} activated and ready\" \"${agent_voice}\"
+  - STEP 3.5b: Use Bash tool to speak: bash .claude/hooks/play-tts.sh \"Agent ${agent_id} activated and ready\" \"${agent_voice}\"
   - AGENTVIBES-TTS-INJECTION: Before every response, scan for questions and speak them using Bash tool"
     else
       activation_injection="  - # AGENTVIBES-TTS-INJECTION: STEP 3.5 - Announce activation with TTS
   - STEP 3.5a: Use Bash tool to create context file: echo \"${agent_id}\" > .bmad-agent-context
-  - STEP 3.5b: Use Bash tool to speak: .claude/hooks/play-tts.sh \"Agent ${agent_id} activated and ready\"
+  - STEP 3.5b: Use Bash tool to speak: bash .claude/hooks/play-tts.sh \"Agent ${agent_id} activated and ready\"
   - AGENTVIBES-TTS-INJECTION: Before every response, scan for questions and speak them using Bash tool"
     fi
 

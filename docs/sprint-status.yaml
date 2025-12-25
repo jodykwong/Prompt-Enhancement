@@ -1,0 +1,237 @@
+# Sprint 状态跟踪 - Prompt Enhancement v1.1
+# 生成日期：2025-12-16T23:59:59Z
+# 项目：Prompt-Enhancement
+# 跟踪系统：文件系统
+# 故事位置：docs/stories/
+
+# ============================================================================
+# 状态定义
+# ============================================================================
+# Epic 状态:
+#   - backlog: 未开始
+#   - in-progress: 正在进行
+#   - done: 已完成
+#
+# Story 状态:
+#   - backlog: 仅在 epic 文件中存在
+#   - drafted: 故事文件已创建
+#   - ready-for-dev: 草稿已批准，准备开发
+#   - in-progress: 开发中
+#   - review: 代码审查中
+#   - done: 已完成
+#
+# 回顾会议状态:
+#   - optional: 可选
+#   - completed: 已完成
+
+generated: "2025-12-24T14:30:00Z"
+project: "Prompt-Enhancement"
+project_version: "v1.1"
+tracking_system: "file-system"
+story_location: "docs/stories/"
+
+# ============================================================================
+# EPIC 1: 快速响应的 `/pe` 命令
+# ============================================================================
+epic-1: done
+1-1-execute-pe-command-with-basic-parameter-parsing: done
+1-2-display-real-time-progress-messages: done
+1-3-format-and-display-results-in-display-only-mode: done
+1-4-implement-5-15-second-performance-target: done
+epic-1-retrospective: optional
+
+# ============================================================================
+# EPIC 2: 自动项目和编码标准分析
+# ============================================================================
+epic-2: done
+2-1-detect-project-type-from-filesystem-markers: done
+2-2-identify-project-indicator-files: done  # Code Review: 2025-12-18 (6/6 CRITICAL/HIGH issues fixed)
+2-3-extract-git-history-and-project-context: done  # Code Review: 2025-12-18 (7/7 issues fixed - 3 HIGH, 4 MEDIUM)
+2-4-generate-project-fingerprint-for-caching: done  # Code Review: 2025-12-18 (8/8 issues fixed - 3 HIGH, 4 MEDIUM, 1 LOW)
+2-5-detect-naming-conventions: done
+2-6-detect-test-framework: done  # Code Review: 2025-12-19 (8/8 issues fixed - 2 CRITICAL, 3 HIGH, 3 MEDIUM)
+2-7-detect-documentation-style: done  # Code Review: 2025-12-19 (8/8 issues fixed - 2 CRITICAL, 3 HIGH, 3 MEDIUM)
+2-8-detect-code-organization-patterns: done  # Code Review: 2025-12-19 (7/7 issues fixed - 2 CRITICAL, 3 HIGH, 2 MEDIUM)
+2-9-generate-confidence-scores-for-standards-detection: done  # Code Review: 2025-12-18 (6/6 issues fixed - 1 CRITICAL, 3 HIGH, 2 MEDIUM)
+2-10-handle-claude-code-sandbox-file-restrictions: done  # Code Review: 2025-12-19 (1/1 CRITICAL bug fixed - temp directory access)
+epic-2-retrospective: optional
+
+# ============================================================================
+# EPIC 3: 项目感知的提示增强
+# ============================================================================
+epic-3: done
+3-1-build-enhancement-prompt-collect-project-context: done  # Completed: 2025-12-19 (28/28 tests passing) | Code Review: 2025-12-23 (修复异常处理)
+3-2-call-llm-to-generate-project-aware-enhancement: done  # Completed: 2025-12-19 (29/29 tests passing) | Code Review: 2025-12-23 (5个HIGH问题已修复)
+3-3-generate-project-specific-implementation-steps-and-verification-criteria: done  # Completed: 2025-12-19 (40/40 tests passing) | Code Review: 2025-12-23 (通过审查)
+epic-3-retrospective: optional
+
+# ============================================================================
+# EPIC 4: 标准显示与用户控制
+# ============================================================================
+epic-4: done
+4-1-display-detected-standards-with-confidence-scores: done  # Code Review: 2025-12-23 (all tests passing)
+4-2-project-level-standards-configuration-pe-yaml: done  # Code Review: 2025-12-23 (YAML config implementation)
+4-3-per-request-override-override-flag: done  # Code Review: 2025-12-23 (override mechanism verified)
+4-4-template-system-and-save-user-overrides: done  # Code Review: 2025-12-23 (template system implemented)
+epic-4-retrospective: completed
+
+# ============================================================================
+# EPIC 5: 健壮的错误处理与优雅降级
+# ============================================================================
+epic-5: done
+5-1-error-classification-and-user-friendly-messages: done  # Code Review: 2025-12-23 (5-level classification)
+5-2-graceful-degradation-mechanism-3-levels: done  # Code Review: 2025-12-23 (3-level degradation verified)
+5-3-user-confirmation-of-degradation-decision: done  # Code Review: 2025-12-23 (user confirmation flow)
+5-4-error-recovery-and-logging: done  # Code Review: 2025-12-23 (logging system with 10MB rotation)
+epic-5-retrospective: completed
+
+# ============================================================================
+# EPIC 6: 用户入门与帮助系统
+# ============================================================================
+epic-6: done
+6-1-first-time-user-3-step-quick-guide: done  # Code Review: 2025-12-23 (quickstart guide)
+6-2-pe-setup-command-for-initial-configuration: done  # Code Review: 2025-12-23 (setup wizard)
+6-3-pe-help-command-and-auto-template-suggestions: done  # Code Review: 2025-12-23 (help system)
+epic-6-retrospective: completed
+
+# ============================================================================
+# 统计摘要
+# ============================================================================
+summary:
+  total_epics: 6
+  total_stories: 28
+  total_retrospectives: 6
+  total_items: 40
+  epics_backlog: 0
+  epics_in_progress: 0
+  epics_done: 6
+  stories_backlog: 0
+  stories_drafted: 0
+  stories_ready_for_dev: 0
+  stories_in_progress: 0
+  stories_review: 0
+  stories_done: 28
+
+# ============================================================================
+# EPIC 依赖关系与执行顺序
+# ============================================================================
+epic_sequencing:
+  epic_1:
+    name: "快速响应的 `/pe` 命令"
+    description: "核心 CLI 响应性和进度反馈"
+    stories: 4
+    can_start: true
+    depends_on: []
+    notes: "独立 epic - 可立即开始"
+
+  epic_2:
+    name: "自动项目和编码标准分析"
+    description: "项目检测和标准分析"
+    stories: 10
+    can_start: true
+    depends_on: []
+    notes: "可与 Epic 1 并行进行"
+
+  epic_3:
+    name: "项目感知的提示增强"
+    description: "LLM 增强生成"
+    stories: 3
+    can_start: true
+    depends_on: ["epic-1", "epic-2"]
+    notes: "需要 CLI 和检测基础设施"
+
+  epic_4:
+    name: "标准显示与用户控制"
+    description: "标准的显示和配置"
+    stories: 4
+    can_start: true
+    depends_on: ["epic-2"]
+    notes: "需要标准检测来显示"
+
+  epic_5:
+    name: "健壮的错误处理与优雅降级"
+    description: "错误处理和恢复"
+    stories: 4
+    can_start: true
+    depends_on: ["epic-1", "epic-2", "epic-3"]
+    notes: "全面覆盖所有故障模式"
+
+  epic_6:
+    name: "用户入门与帮助系统"
+    description: "新用户的帮助和设置"
+    stories: 3
+    can_start: true
+    depends_on: ["epic-1", "epic-3"]
+    notes: "可并行开发"
+
+# ============================================================================
+# 推荐的 Sprint 分配 (Day 1-3 v1.1.0-alpha)
+# ============================================================================
+sprint_allocation:
+  sprint_1_day_1:
+    name: "基础设施与核心 CLI"
+    epics: ["epic-1"]
+    focus: "基本 `/pe` 命令的工作与输出格式化"
+    stories:
+      - "1-1-execute-pe-command-with-basic-parameter-parsing"
+      - "1-2-display-real-time-progress-messages"
+      - "1-3-format-and-display-results-in-display-only-mode"
+    key_deliverable: "可执行的 /pe 命令和进度反馈"
+
+  sprint_2_day_2:
+    name: "项目分析与标准检测"
+    epics: ["epic-2"]
+    focus: "构建项目分析管道（P0.1-P0.3 阶段）"
+    stories:
+      - "2-1-detect-project-type-from-filesystem-markers"
+      - "2-2-identify-project-indicator-files"
+      - "2-3-extract-git-history-and-project-context"
+      - "2-4-generate-project-fingerprint-for-caching"
+      - "2-5-detect-naming-conventions"
+    key_deliverable: "完整的项目分析管道，带检测和缓存"
+
+  sprint_3_day_3:
+    name: "增强生成与集成"
+    epics: ["epic-3", "epic-4"]
+    focus: "将分析与 LLM 集成，显示标准"
+    stories:
+      - "3-1-build-enhancement-prompt-collect-project-context"
+      - "3-2-call-llm-to-generate-project-aware-enhancement"
+      - "4-1-display-detected-standards-with-confidence-scores"
+    key_deliverable: "完整的 v1.1.0-alpha MVP 功能"
+
+  phase_4:
+    name: "第 4 阶段：错误处理、入门、性能优化"
+    epics: ["epic-5", "epic-6"]
+    focus: "完善、帮助系统、错误处理"
+    remaining_stories: "所有剩余故事"
+
+# ============================================================================
+# 故事文件位置参考
+# ============================================================================
+story_template:
+  location: "docs/stories/{epic-num}-{story-num}-{title}.md"
+  examples:
+    - "docs/stories/1-1-execute-pe-command-with-basic-parameter-parsing.md"
+    - "docs/stories/1-2-display-real-time-progress-messages.md"
+    - "docs/stories/2-1-detect-project-type-from-filesystem-markers.md"
+
+# ============================================================================
+# v1.1.0-alpha MVP 里程碑
+# ============================================================================
+milestones:
+  mvp_v1_1_0_alpha:
+    target_date: "Day 3 end"
+    scope: "3 sprints, 13-15 核心故事"
+    key_features:
+      - "/pe 命令全功能运行"
+      - "项目检测和标准分析"
+      - "项目感知的增强生成"
+      - "标准显示和基本错误处理"
+    testing: "手动测试在 Claude Code 环境中"
+    release: "v1.1.0-alpha"
+
+  follow_up:
+    name: "v1.1.1+ 增强"
+    includes: ["完整错误处理", "帮助系统", "性能优化", "缓存优化"]
+    timeline: "Day 4+"

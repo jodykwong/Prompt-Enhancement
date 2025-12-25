@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "bmad_enabled": true,
+  "bmad_path": "/home/sunrise/Prompt-Enhancement-Auggie/Prompt-Enhancement/_bmad",
+  "agents_path": "/home/sunrise/Prompt-Enhancement-Auggie/Prompt-Enhancement/.kiro/agents",
+  "workflows": {
+    "core": "/home/sunrise/Prompt-Enhancement-Auggie/Prompt-Enhancement/_bmad/core/workflows",
+    "bmm": "/home/sunrise/Prompt-Enhancement-Auggie/Prompt-Enhancement/_bmad/bmm/workflows",
+    "bmgd": "/home/sunrise/Prompt-Enhancement-Auggie/Prompt-Enhancement/_bmad/bmgd/workflows",
+    "cis": "/home/sunrise/Prompt-Enhancement-Auggie/Prompt-Enhancement/_bmad/cis/workflows",
+    "bmb": "/home/sunrise/Prompt-Enhancement-Auggie/Prompt-Enhancement/_bmad/bmb/workflows"
+  }
+}

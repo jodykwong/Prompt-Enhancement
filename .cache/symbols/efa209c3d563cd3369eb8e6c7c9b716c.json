@@ -1,0 +1,26 @@
+{
+  "file_path": "/tmp/pytest-of-sunrise/pytest-15/test_get_file_symbols0/test.py",
+  "language": "python",
+  "symbols": [
+    {
+      "name": "func1",
+      "symbol_type": "function",
+      "signature": "def func1()",
+      "line_number": 2,
+      "parent_class": null,
+      "docstring": null,
+      "decorators": []
+    },
+    {
+      "name": "func2",
+      "symbol_type": "function",
+      "signature": "def func2(x)",
+      "line_number": 5,
+      "parent_class": null,
+      "docstring": null,
+      "decorators": []
+    }
+  ],
+  "extracted_at": "2025-12-24T22:24:07.954905",
+  "file_hash": "790c048588db515b0faf789c7df81a50"
+}

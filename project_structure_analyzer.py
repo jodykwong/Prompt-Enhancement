@@ -69,7 +69,11 @@ class ProjectStructureAnalyzer:
         "config": ["config", "settings", "conf", "configuration"],
         "scripts": ["scripts", "script", "bin", "tools"],
         "build": ["build", "dist", "out", "output"],
+        "bmad": ["_bmad"],  # BMAD platform directories
     }
+
+    # BMAD 模块识别（子模块在 _bmad 中）
+    BMAD_MODULES = ["bmb", "bmgd", "bmm", "cis", "core"]
 
     # 入口文件模式
     ENTRY_FILES = [
@@ -113,6 +117,7 @@ class ProjectStructureAnalyzer:
         self.config_files_found = []
         self.total_files = 0
         self.total_directories = 0
+        self.bmad_modules_found = {}  # 存储找到的 BMAD 模块及其工作流
 
     def analyze(self) -> Dict[str, Any]:
         """
@@ -139,7 +144,10 @@ class ProjectStructureAnalyzer:
             # 扫描项目结构
             self._scan_directory(self.project_path, 0)
 
-            return {
+            # 检测 BMAD 工作流
+            self._detect_bmad_workflows()
+
+            result = {
                 "directory_tree": directory_tree,
                 "key_directories": sorted(list(self.key_dirs_found)),
                 "entry_files": sorted(self.entry_files_found),
@@ -147,6 +155,12 @@ class ProjectStructureAnalyzer:
                 "total_files": self.total_files,
                 "total_directories": self.total_directories,
             }
+
+            # 添加 BMAD 信息
+            if self.bmad_modules_found:
+                result["bmad_modules"] = self.bmad_modules_found
+
+            return result
         except Exception as e:
             logger.warning(f"分析项目结构时出错: {e}")
             return {
@@ -233,6 +247,35 @@ class ProjectStructureAnalyzer:
         """检查是否为配置文件"""
         if file_name in self.CONFIG_FILES:
             self.config_files_found.append(file_name)
+
+    def _detect_bmad_workflows(self) -> None:
+        """检测 BMAD 平台及其工作流"""
+        bmad_path = self.project_path / "_bmad"
+        if not bmad_path.exists():
+            return
+
+        try:
+            # 扫描 BMAD 模块
+            for module_name in self.BMAD_MODULES:
+                module_path = bmad_path / module_name
+                if module_path.exists() and module_path.is_dir():
+                    # 检查工作流目录
+                    workflows_path = module_path / "workflows"
+                    workflows = []
+                    if workflows_path.exists():
+                        try:
+                            workflows = [d.name for d in workflows_path.iterdir()
+                                       if d.is_dir() and not d.name.startswith("_")]
+                        except PermissionError:
+                            pass
+
+                    self.bmad_modules_found[module_name] = {
+                        "path": str(module_path.relative_to(self.project_path)),
+                        "workflows": sorted(workflows),
+                        "has_workflows": len(workflows) > 0
+                    }
+        except Exception as e:
+            logger.warning(f"检测 BMAD 工作流时出错: {e}")
 
 
 def analyze_project_structure(project_path: str, max_depth: int = 3) -> Dict[str, Any]:

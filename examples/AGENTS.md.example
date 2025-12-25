@@ -1,0 +1,480 @@
+# Prompt Enhancement - Development Guidelines for AI Agents
+
+**Project**: Prompt Enhancement v1.1
+**Language**: Python 3.9+
+**Framework**: None (Pure Library)
+
+---
+
+## Quick Start
+
+Setup your development environment:
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Install dev tools
+pip install pytest pytest-cov black flake8 mypy
+
+# Verify setup
+pytest tests/ -v
+```
+
+---
+
+## Commands
+
+### Running Tests
+
+```bash
+# Run all tests with coverage
+pytest tests/ -v --cov=src --cov-report=html
+
+# Run specific test file
+pytest tests/test_agent_docs_parser.py -v
+
+# Run tests matching pattern
+pytest -k "parse" -v
+
+# Generate HTML coverage report
+pytest tests/ --cov=src --cov-report=html
+# Open htmlcov/index.html to view
+```
+
+### Code Quality
+
+```bash
+# Format code with Black
+black src/ tests/
+
+# Check code style
+python -m flake8 src/ tests/
+
+# Type checking
+mypy src/
+
+# All checks at once
+black src/ tests/ && python -m flake8 src/ tests/ && mypy src/
+```
+
+### Running the Tool
+
+```bash
+# Basic usage
+python -m src.main --prompt "your prompt here"
+
+# Interactive mode
+python -m src.main --interactive
+
+# With verbose output
+python -m src.main --verbose --prompt "your prompt"
+```
+
+---
+
+## Code Style Guidelines
+
+### Naming Conventions
+
+- **Functions & Variables**: `snake_case`
+  - ✅ `parse_agents_md`, `clarity_score`, `config_file`
+  - ❌ `parseAgentsMd`, `clarityScore`, `configFile`
+
+- **Classes**: `PascalCase`
+  - ✅ `AgentDocParser`, `ClarityScorer`, `EnhancementContext`
+  - ❌ `agent_doc_parser`, `clarity_scorer`, `enhancement_context`
+
+- **Constants**: `UPPER_SNAKE_CASE`
+  - ✅ `DEFAULT_TIMEOUT`, `MAX_RETRIES`, `CACHE_TTL`
+  - ❌ `defaultTimeout`, `max_retries`, `CacheTtl`
+
+### Type Hints (MANDATORY)
+
+All public functions MUST have type hints:
+
+```python
+# ✅ REQUIRED - Type hints for all parameters and return type
+def calculate_clarity_score(prompt: str, context: dict) -> float:
+    """Calculate clarity score of a prompt.
+
+    Args:
+        prompt: The user input prompt
+        context: Additional context information
+
+    Returns:
+        Clarity score between 0.0 and 1.0
+    """
+    pass
+
+# ❌ NOT ALLOWED - Missing type hints
+def parse_file(file_path):
+    pass
+
+# ✅ For complex types, use typing module
+from typing import Optional, List, Dict
+
+def find_config(
+    root: str,
+    force_source: Optional[str] = None
+) -> Optional[str]:
+    """Find AGENTS.md file in project."""
+    pass
+```
+
+### Docstrings (Google Style)
+
+All public functions and classes must have docstrings:
+
+```python
+def parse_agents_md(file_path: str) -> AgentConfig:
+    """Parse AGENTS.md file into structured config.
+
+    Supports both structured and flexible markdown formats.
+    Automatically detects format and applies appropriate parser.
+
+    Args:
+        file_path: Path to AGENTS.md file
+
+    Returns:
+        AgentConfig object containing parsed information
+
+    Raises:
+        FileNotFoundError: If file does not exist
+        ParseError: If file cannot be parsed
+
+    Example:
+        >>> parser = AgentDocParser()
+        >>> config = parser.parse("./AGENTS.md")
+        >>> print(config.commands)
+    """
+```
+
+### Line Length
+
+Maximum 88 characters (Black's default):
+
+```python
+# ✅ Good - Within 88 char limit
+result = process_data(input_param, context_param)
+
+# ✅ Good - Break long lines appropriately
+result = process_data(
+    input_param,
+    context_param,
+    optional=True
+)
+
+# ❌ Bad - Exceeds limit
+very_long_variable_name = some_function_call(param1, param2, param3, param4)
+```
+
+### Imports
+
+- Group imports in order: stdlib, third-party, local
+- Use absolute imports
+- One import per line (except from imports with multiple items)
+
+```python
+# ✅ Good
+import os
+from typing import Optional, List
+
+from pydantic import BaseModel
+import yaml
+
+from src.agent_docs_parser import AgentDocParser
+
+# ❌ Bad
+import os, sys
+from src.agent_docs_parser import *
+```
+
+---
+
+## Testing Requirements
+
+### Coverage Minimum
+
+- **Threshold**: 80% code coverage (minimum)
+- **Target**: 90%+ for critical modules
+
+### Writing Tests
+
+```python
+# ✅ Good test structure
+import pytest
+from src.agent_docs_parser import AgentDocParser
+
+
+@pytest.fixture
+def parser():
+    """Fixture providing parser instance"""
+    return AgentDocParser()
+
+
+@pytest.fixture
+def sample_markdown():
+    """Fixture with sample AGENTS.md content"""
+    return """
+## Commands
+npm run test
+
+## Code Style
+- Type hints required
+"""
+
+
+def test_parse_structured_format(parser, sample_markdown):
+    """Test parsing structured markdown format."""
+    config = parser.parse_from_content(sample_markdown)
+
+    assert config.is_valid
+    assert len(config.commands) > 0
+    assert len(config.guidelines) > 0
+
+
+def test_empty_file_handling(parser, tmp_path):
+    """Test handling of empty AGENTS.md file."""
+    empty_file = tmp_path / "AGENTS.md"
+    empty_file.write_text("")
+
+    config = parser.parse(str(empty_file))
+
+    assert config.is_valid is False
+    assert len(config.commands) == 0
+```
+
+### Running Tests Before Commit
+
+```bash
+# Must pass these before committing:
+pytest tests/ -v --cov=src --cov-report=term-missing
+# Coverage must show ≥ 80%
+```
+
+---
+
+## Project Structure
+
+```
+Prompt-Enhancement/
+├── src/
+│   ├── __init__.py
+│   ├── agent_docs_parser.py       # Parse AGENTS.md
+│   ├── clarity_scorer.py           # Score prompt clarity
+│   ├── clarifier.py                # Interactive clarification
+│   ├── response_cache.py           # Cache responses
+│   ├── context_collector.py        # Collect project context
+│   ├── enhanced_prompt_generator.py # Generate enhanced prompt
+│   └── models.py                   # Data class definitions
+├── tests/
+│   ├── test_agent_docs_parser.py
+│   ├── test_clarity_scorer.py
+│   ├── test_clarifier.py
+│   ├── test_response_cache.py
+│   └── conftest.py                 # Pytest fixtures
+├── skill_templates/
+│   └── clarifier/
+│       ├── authentication.yaml
+│       ├── testing.yaml
+│       ├── security.yaml
+│       └── ...
+├── docs/
+│   ├── DESIGN_V1.1.md              # Architecture design
+│   ├── API_V1.1.md                 # API reference
+│   ├── AGENTS_MD_GUIDE.md          # AGENTS.md guide
+│   └── IMPLEMENTATION_PLAN.md      # Step-by-step plan
+├── examples/
+│   └── AGENTS.md.example           # Example AGENTS.md
+├── README.md                       # Project overview
+├── CHANGELOG.md                    # Version history
+├── requirements.txt                # Dependencies
+└── AGENTS.md                       # This file
+```
+
+---
+
+## Boundaries & Constraints
+
+### Never Modify Without Approval
+
+These directories contain critical code or legacy systems:
+
+- ❌ `ARCHIVE/` - Historical code, preserve as-is
+- ❌ `legacy/` - Legacy implementations, do not modify
+- ❌ `.bmad/` - BMAD framework files, use as-is
+- ❌ `.claude/` - Claude Code configuration, review before changes
+
+### Deprecated APIs (Do NOT Use)
+
+If you see these old patterns, use the replacements:
+
+| ❌ Old Pattern | ✅ New Pattern | Note |
+|---|---|---|
+| `get_context()` | `ContextCollector().collect()` | v1.1+ only |
+| `format_prompt(str)` | `EnhancedPromptGenerator().generate()` | v1.1+ only |
+| `parse_file()` | `AgentDocParser().parse()` | v1.1+ only |
+
+### Requires Explicit Approval
+
+These changes need team review:
+
+- Database schema changes
+- Security-related modifications
+- API signature changes
+- Configuration format updates
+- Dependency version bumps
+
+---
+
+## Important Warnings
+
+### ⚠️ Critical (Do NOT Ignore)
+
+**1. Type Safety is Enforced**
+```python
+# ❌ This will fail CI/CD
+def calculate(prompt):  # No type hints!
+    return 0.5
+
+# ✅ This is required
+def calculate(prompt: str) -> float:
+    return 0.5
+```
+
+**2. Test Coverage Minimum**
+- All new code must be tested
+- Coverage must be ≥ 80%
+- Run `pytest --cov=src` before committing
+
+**3. Do NOT Modify Type Signatures**
+- Changing function signatures breaks compatibility
+- Always maintain backward compatibility
+- Use deprecation warnings for changes
+
+### 🚨 Critical Warnings
+
+**1. Security-Related Code**
+- Never hardcode secrets or API keys
+- Use environment variables via `.env`
+- Review SECURITY.md for guidelines
+- All security changes require approval
+
+**2. Deprecated Usage**
+- Do not use `OldContextAPI` - use v1.1 API
+- Do not use `format_prompt()` - use EnhancedPromptGenerator
+- Remove usage of deprecated functions
+
+**3. Data Integrity**
+- Do not modify cache files directly
+- Do not delete `.pe-cache` during runtime
+- Use ResponseCache API for cache operations
+
+---
+
+## Development Workflow
+
+### Creating a Feature Branch
+
+```bash
+# Create new branch for your feature
+git checkout -b feature/add-jwt-support
+
+# Or for bug fixes
+git checkout -b fix/clarifier-bug
+```
+
+### Before Submitting PR
+
+```bash
+# 1. Format code
+black src/ tests/
+
+# 2. Run linter
+python -m flake8 src/ tests/
+
+# 3. Type checking
+mypy src/
+
+# 4. Run all tests
+pytest tests/ -v --cov=src --cov-report=term-missing
+
+# 5. Verify coverage ≥ 80%
+```
+
+### Commit Message Format
+
+```
+[SCOPE] Brief description (50 chars max)
+
+Longer explanation (if needed)
+- Bullet point 1
+- Bullet point 2
+
+Fixes #123 (if applicable)
+```
+
+Example:
+```
+[core] Add JWT support to authentication module
+
+- Implement JWT token generation
+- Add token validation logic
+- Add tests for token lifecycle
+
+Fixes #456
+```
+
+---
+
+## Dependencies
+
+### Required
+
+- Python 3.9+
+- PyYAML 6.0+
+- pydantic 2.0+
+- python-dotenv 1.0+
+
+### Development
+
+- pytest 7.0+
+- pytest-cov 4.0+
+- black 23.0+
+- flake8 5.0+
+- mypy 1.0+
+
+---
+
+## FAQ
+
+**Q: Do I need type hints?**
+A: Yes, they are mandatory for all public functions.
+
+**Q: What's the test coverage requirement?**
+A: Minimum 80%. Run `pytest --cov=src` to check.
+
+**Q: Can I modify the legacy/ directory?**
+A: No, without explicit approval. Ask the team first.
+
+**Q: How do I run a specific test?**
+A: `pytest tests/test_file.py::test_function -v`
+
+**Q: What should be in a commit message?**
+A: See "Commit Message Format" above.
+
+---
+
+## Resources
+
+- [API Reference](../docs/API_V1.1.md)
+- [Architecture Design](../docs/DESIGN_V1.1.md)
+- [Implementation Plan](../docs/IMPLEMENTATION_PLAN.md)
+- [AGENTS.md Guide](../docs/AGENTS_MD_GUIDE.md)
+
+---
+
+**Last Updated**: 2025-12-15
+**Version**: 1.1.0
+**Status**: Active Development

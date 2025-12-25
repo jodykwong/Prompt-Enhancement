@@ -1,0 +1,98 @@
+{
+  "file_path": "/tmp/pytest-of-sunrise/pytest-15/test_full_workflow0/example.py",
+  "language": "python",
+  "symbols": [
+    {
+      "name": "DataProcessor",
+      "symbol_type": "class",
+      "signature": "class DataProcessor",
+      "line_number": 2,
+      "parent_class": null,
+      "docstring": null,
+      "decorators": []
+    },
+    {
+      "name": "__init__",
+      "symbol_type": "method",
+      "signature": "def __init__(self, data)",
+      "line_number": 3,
+      "parent_class": "DataProcessor",
+      "docstring": null,
+      "decorators": []
+    },
+    {
+      "name": "__init__",
+      "symbol_type": "function",
+      "signature": "def __init__(self, data)",
+      "line_number": 3,
+      "parent_class": null,
+      "docstring": null,
+      "decorators": []
+    },
+    {
+      "name": "process",
+      "symbol_type": "method",
+      "signature": "def process(self)",
+      "line_number": 6,
+      "parent_class": "DataProcessor",
+      "docstring": null,
+      "decorators": []
+    },
+    {
+      "name": "process",
+      "symbol_type": "function",
+      "signature": "def process(self)",
+      "line_number": 6,
+      "parent_class": null,
+      "docstring": null,
+      "decorators": []
+    },
+    {
+      "name": "async_process",
+      "symbol_type": "method",
+      "signature": "async def async_process(self)",
+      "line_number": 9,
+      "parent_class": "DataProcessor",
+      "docstring": null,
+      "decorators": []
+    },
+    {
+      "name": "async_process",
+      "symbol_type": "async_function",
+      "signature": "async def async_process(self)",
+      "line_number": 9,
+      "parent_class": null,
+      "docstring": null,
+      "decorators": []
+    },
+    {
+      "name": "_do_process",
+      "symbol_type": "method",
+      "signature": "def _do_process(self)",
+      "line_number": 12,
+      "parent_class": "DataProcessor",
+      "docstring": null,
+      "decorators": []
+    },
+    {
+      "name": "_do_process",
+      "symbol_type": "function",
+      "signature": "def _do_process(self)",
+      "line_number": 12,
+      "parent_class": null,
+      "docstring": null,
+      "decorators": []
+    },
+    {
+      "name": "utility_function",
+      "symbol_type": "function",
+      "signature": "def utility_function(a, b)",
+      "line_number": 15,
+      "parent_class": null,
+      "docstring": null,
+      "decorators": []
+    }
+  ],
+  "extracted_at": "2025-12-24T22:24:07.967768",
+  "file_hash": "c04a0b666ba28b2fd78fa95decd5c92f"
+}

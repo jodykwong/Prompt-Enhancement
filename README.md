@@ -1,69 +1,242 @@
-# 📚 Prompt Enhancement - 提示词增强系统
+# 📚 Prompt Enhancement - 代码项目专用提示词增强系统
 
-**版本**: 1.01 (稳定版) | **最后更新**: 2025-12-11 | **下一版本**: [v1.1 路线图](ROADMAP_V1_1.md)
+**当前版本**: v1.2.1-dev (Phase 1-3 完成) | **生产版本**: v1.1.0 ✅ | **最后更新**: 2025-12-25
 
-一个智能的提示词增强系统，自动收集项目上下文并进行提示词优化，提升 AI 模型的响应质量。
+一个**代码项目专用的 CLI 工具**，用智能文件发现和项目上下文来增强用户提示词，提升 Claude AI 对代码任务的响应质量。
 
-**🎉 v1.01 特性**:
-- ✨ **Display-Only 模式** - 增强后只显示，用户手动执行（符合 Auggle CLI 模式）
-- 🚀 **一键安装** - 运行 `./install.sh` 快速集成到 Claude Code
-- 📦 **GitHub 就绪** - 完整的发布包，支持开源分享
-- 📊 **完整 P0 功能** - P0.1-P0.6 所有功能完整实现
-- 🧪 **高质量测试** - 31/31 单元测试通过，87% 代码覆盖率
-- 📚 **详细文档** - 完整的 API 文档和使用指南
+## 🎯 v1.2.1 开发方向（当前分支：feature/v1.1-brownfield）
 
-**📋 v1.1 即将推出**（预计 2025年1月）:
-- 🔥 **响应速度优化** - 30-60s → 5-15s (80% 性能提升)
-- 🤖 **编码规范识别** - 自动识别和应用项目规范
-- 🎯 **自定义模板系统** - Markdown + Frontmatter 支持
-- ⚙️ **CI/CD 模式** - --quiet 标志和自动化支持
+**核心功能**（10天计划）：
+- 🔍 **智能文件发现** - 从模糊指令自动找到最相关的 5-10 个源文件（Day 1-3 ✅ 完成）
+  - KeywordExtractor：中英文关键词提取
+  - FileMatcher：精准文件匹配 + 语义映射
+  - 18个测试，全部通过 ✅ | 关键词提取准确率 100% ✅
 
-[查看完整路线图 →](ROADMAP_V1_1.md)
+- 📋 **符号索引** - 提取函数/类签名而非完整代码（Day 4-5 ✅ 完成）
+  - PythonSymbolExtractor：AST 解析（函数/类/装饰器）
+  - JavaScriptSymbolExtractor：正则符号提取
+  - SymbolCache：智能双层缓存（内存+磁盘）
+  - 34个测试，全部通过 ✅ | 缓存命中率 >95% ✅
 
-## 🎯 核心功能
+- 📝 **编码模板系统** - 5 种任务类型的结构化指导（Day 6-7 ✅ 完成）
+  - CodingTemplate：5 个 YAML 模板（implement/fix/refactor/test/review）
+  - TemplateTrigger：双语触发词匹配（中文+英文）
+  - CodingTemplateManager：懒加载架构（0.17ms 初始化）
+  - 38个测试，全部通过 ✅ | **性能提升 863x** ✅
 
-### ✅ 已完成功能 (P0.1-P0.6)
+- 🏗️ **AGENTS.md 自动生成** - 为新项目生成边界约束说明（Day 8-9 计划中）
+  - 技术栈检测
+  - 命令提取
+  - 代码风格推断
 
-- **P0.1: 技术栈自动识别** - 自动检测项目使用的技术框架 ✅
-- **P0.2: 项目结构分析** - 解析项目目录和关键文件 ✅
-- **P0.3: Git 历史分析** - 提取提交记录和分支信息 ✅
-- **P0.4: 上下文整合** - 统一收集项目上下文 ✅
-- **P0.5: 增强器集成** - 与异步提示增强器集成 ✅
-- **P0.6: 测试和文档** - 完整的单元测试和详细文档 ✅
+- ⚡ **性能优化** - 冷启动 30s → 15s，缓存命中 10s → 5s（Day 10 计划中）
 
-### 📊 项目进度
+---
+
+## ✅ v1.1.0 功能完整（生产就绪）
+
+**生产版本特性** (28个用户故事 + 6个Epic):
+- ⚡ **快速响应 `/pe` 命令** - 菜单确认工作流，用户掌控执行
+- 🔍 **自动项目检测** - 识别技术栈和编码规范
+- 🤖 **项目感知增强** - 基于项目上下文的智能优化
+- 📊 **标准显示控制** - 实时显示检测到的编码规范
+- 🛡️ **健壮错误处理** - 5级错误分类 + 3级优雅降级
+- 📚 **新用户帮助系统** - 快速入门 + 交互式设置
+
+**质量指标**：874个测试 ✅ 100% | 代码覆盖率 81% | 零缺陷
+
+---
+
+## 📌 已知问题和解决方案
+
+### /pe 命令菜单确认流程
+**问题**：v1.2.1 开发版中 `/pe` 命令无法等待用户菜单选择
+**原因**：Claude Code `/commands/` 系统架构限制
+**解决**：方案A - 用户手动从菜单选择，确保用户掌控权 ✅
+
+详见：[/pe 命令诊断和解决方案](docs/GITHUB_ISSUE_TEMPLATE.md)
+
+---
+
+## 🚀 快速开始
+
+### 当前开发版本使用 (/pe 命令)
+
+```bash
+/pe 您的提示词
+```
+
+**工作流**：
+1. 脚本增强您的提示词
+2. 显示原始 vs 增强版本对比
+3. 显示菜单：选择执行、修改、重新增强或放弃
+4. 您从菜单中选择操作，脚本执行
+
+**菜单选项**：
+- 1️⃣ **使用增强版本** - 复制粘贴给我执行
+- 2️⃣ **修改后使用** - 编辑后复制粘贴给我
+- 3️⃣ **重新增强** - 输入新提示词重新增强
+- 4️⃣ **放弃此结果** - 取消并重新组织需求
+
+---
+
+## 📂 项目结构
 
 ```
-P0.1: ✅ 完成 (16.7%)
-P0.2: ✅ 完成 (33.3%)
-P0.3: ✅ 完成 (50.0%)
-P0.4: ✅ 完成 (66.7%)
-P0.5: ✅ 完成 (83.3%)
-P0.6: ✅ 完成 (100%)
+Prompt-Enhancement/
+├── src/prompt_enhancement/        # v1.2.1 新增强引擎
+│   ├── file_discoverer.py         # 智能文件发现模块（Day 1 ✅）
+│   ├── enhancement/               # 增强引擎核心
+│   └── ...
+│
+├── .claude/commands/              # Claude Code 集成
+│   ├── pe.md                      # /pe 命令定义
+│   └── scripts/enhance.py         # 增强脚本
+│
+├── docs/
+│   ├── v1.2.1_PRD.md             # 产品需求文档
+│   ├── v1.2.1_IMPLEMENTATION_PLAN.md
+│   ├── v1.2.1_WORKFLOW_STATUS.md
+│   ├── GITHUB_ISSUE_TEMPLATE.md  # /pe 命令问题诊断 ⭐
+│   └── ...
+│
+├── enhanced_prompt_generator.py   # v1.1.0 增强模块
+├── async_prompt_enhancer.py       # 异步处理
+└── README.md                      # 本文件
+```
 
-总进度: ✅ 100% (P0 阶段完成！)
+---
+
+## 🛠️ 技术栈
+
+- **语言**：Python 3.10+
+- **构建**：Pip
+- **AI 增强**：DeepSeek API
+- **项目框架**：BMAD 平台（5个模块）
+- **测试**：pytest（18+ 测试套件）
+- **版本控制**：Git
+
+---
+
+## 📊 开发进度
+
+| 阶段 | 计划 | 状态 | 测试 | 成就 |
+|------|------|------|------|------|
+| **Phase 1** | 智能文件发现 | ✅ 完成 | 18/18 ✅ | 关键词准确率 100% |
+| **Phase 2** | 符号索引 | ✅ 完成 | 34/34 ✅ | 缓存命中率 >95% |
+| **Phase 3** | 编码模板 | ✅ 完成 | 38/38 ✅ | **性能 863x 提升** ⚡ |
+| **Phase 4** | AGENTS.md 生成 | 📅 计划中 | - | - |
+| **Phase 5** | 性能优化 | 📅 计划中 | - | - |
+| **总计** | | **✅ 75% 完成** | **90/90 ✅** | |
+
+---
+
+## 📖 文档
+
+- **快速开始**：[QUICK_START.md](QUICK_START.md)
+- **使用指南**：[USAGE_GUIDE.md](USAGE_GUIDE.md)
+- **v1.2.1 路线图**：[docs/v1.2.1_PRD.md](docs/v1.2.1_PRD.md)
+- **已知问题和解决方案**：[docs/GITHUB_ISSUE_TEMPLATE.md](docs/GITHUB_ISSUE_TEMPLATE.md) ⭐
+
+---
+
+## 🔧 安装和配置
+
+### 环境要求
+```
+Python 3.10+
+API Key: DeepSeek (https://platform.deepseek.com)
+```
+
+### 配置 .env
+```bash
+cp .env.example .env
+# 编辑 .env，填入 DEEPSEEK_API_KEY
+```
+
+---
+
+[查看完整路线图 →](docs/v1.2.1_PRD.md)
+
+## 🎯 核心功能 - v1.1.0 完整实现
+
+### 📦 6个Epic - 28个用户故事
+
+| Epic | 状态 | 故事数 | 关键功能 |
+|------|------|--------|---------|
+| **Epic 1** | ✅ | 4 | 快速响应 `/pe` 命令 (5-15秒) |
+| **Epic 2** | ✅ | 10 | 自动项目检测 (6种语言 + 编码规范) |
+| **Epic 3** | ✅ | 3 | 项目感知的提示增强 + 实现指南 |
+| **Epic 4** | ✅ | 4 | 标准显示、YAML配置、用户覆盖 |
+| **Epic 5** | ✅ | 4 | 5级错误分类 + 3级优雅降级 |
+| **Epic 6** | ✅ | 3 | 新用户入门 + 交互式设置 |
+
+### 📊 质量指标
+
+```
+测试覆盖: 874个测试 ✅ 100% 通过
+代码覆盖: 81% (目标80%) ✅ 达成
+缺陷统计: 0个P0/P1/P2/P3 ✅ 零缺陷
+性能表现: 所有约束测试通过 ✅
+架构质量: A级 (92/100分) ✅
+总体状态: 生产就绪 ✅
 ```
 
 ## 🚀 快速开始
 
-### 📦 安装（推荐）
+### 📦 三种安装方式
+
+#### 方式 1：使用 pip（推荐）
 
 ```bash
-# 克隆仓库
-git clone https://github.com/yourusername/Prompt-Enhancement.git
-cd Prompt-Enhancement
-
-# 一键安装到 Claude Code
-./install.sh
+pip install prompt-enhancement
+prompt-enhance-install /path/to/your/project
+prompt-enhance-setup
 ```
 
-安装脚本会：
-- ✅ 检查依赖并安装 Python 包
-- ✅ 提示您输入 DeepSeek API Key
-- ✅ 自动配置 `/pe` 命令
-- ✅ 验证安装成功
+**优点**：Python 开发者标准方式，自动依赖管理
 
-**详细安装指南**: [INSTALL.md](INSTALL.md)
+#### 方式 2：使用 NPM
+
+```bash
+npm install -g @jodykwong/prompt-enhancement
+prompt-enhance-install /path/to/your/project
+prompt-enhance-setup
+```
+
+**优点**：Node.js 开发者友好，全局可用
+
+#### 方式 3：一键脚本（跨平台）
+
+```bash
+# Linux/macOS
+bash cli/install.sh /path/to/your/project
+
+# Windows PowerShell
+.\cli\install.ps1 -ProjectPath "C:\path\to\project"
+
+# 通用 Python
+python3 cli/install.py /path/to/your/project
+```
+
+**优点**：无需额外依赖，完全跨平台
+
+### ✅ 部署验证
+
+已在 **xlerobot** 项目中验证部署成功：
+
+```bash
+# 验证命令
+python3 cli/install.py /home/sunrise/xlerobot
+
+# 结果
+✓ pe.md 命令已安装（符号链接）
+✓ enhance.py 脚本已复制
+✓ 所有 Python 模块已部署
+✓ .env 配置文件已创建
+```
+
+**详细安装指南**: [docs/deploy/INSTALL.md](docs/deploy/INSTALL.md) | [docs/deploy/QUICKSTART.md](docs/deploy/QUICKSTART.md)
 
 ---
 
@@ -214,6 +387,35 @@ MVP 包含以下测试用例：
 
 ```
 Prompt-Enhancement/
+├── 🔥 部署系统（v2.0.0 新增）
+│   ├── packages/
+│   │   ├── python/                     # pip 包源代码
+│   │   │   ├── setup.py
+│   │   │   ├── pyproject.toml
+│   │   │   └── prompt_enhancement/     # 包模块
+│   │   │       ├── __init__.py
+│   │   │       ├── installer.py        ⭐ 核心安装器
+│   │   │       └── cli.py              ⭐ CLI 接口
+│   │   │
+│   │   └── npm/                        # npm 包源代码
+│   │       ├── package.json
+│   │       └── scripts/
+│   │           ├── install.js          ⭐ 主安装脚本
+│   │           ├── configure.js
+│   │           └── verify.js
+│   │
+│   ├── cli/                            # 一键安装脚本
+│   │   ├── install.sh                  (Linux/macOS)
+│   │   ├── install.py                  (跨平台) ✅ 已测试
+│   │   └── install.ps1                 (Windows)
+│   │
+│   └── docs/deploy/                    # 部署文档
+│       ├── INSTALL.md                  (完整安装指南)
+│       ├── QUICKSTART.md               (5分钟快速开始)
+│       ├── TROUBLESHOOTING.md          (故障排除)
+│       ├── DEPLOYMENT.md               (发布指南)
+│       └── README.md                   (部署总结)
+│
 ├── 核心模块
 │   ├── tech_stack_detector.py          # P0.1: 技术栈检测
 │   ├── project_structure_analyzer.py   # P0.2: 项目结构分析
@@ -241,7 +443,11 @@ Prompt-Enhancement/
 └── 配置和文档
     ├── requirements.txt
     ├── .env.example
-    └── docs/ (即将创建)
+    ├── README.md                       (本文件，已更新)
+    └── docs/
+        ├── 核心功能文档
+        ├── 架构文档
+        └── API 参考
 ```
 
 ## 🛠️ 技术栈

@@ -1,0 +1,17 @@
+{
+  "file_path": "/tmp/pytest-of-sunrise/pytest-17/test_cache_performance0/test.py",
+  "language": "python",
+  "symbols": [
+    {
+      "name": "test",
+      "symbol_type": "function",
+      "signature": "def test()",
+      "line_number": 1,
+      "parent_class": null,
+      "docstring": null,
+      "decorators": []
+    }
+  ],
+  "extracted_at": "2025-12-24T22:25:37.178233",
+  "file_hash": "38772d98c1724542fe6b690b7497514b"
+}

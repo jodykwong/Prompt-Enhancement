@@ -1,0 +1,84 @@
+name: "编写测试"
+task_type: "test"
+description: "编写单元测试、集成测试或其他类型的测试"
+
+triggers:
+  - 测试
+  - 单测
+  - 集成测试
+  - test
+  - unittest
+  - integration
+  - coverage
+  - pytest
+  - jest
+
+checklist:
+  - 选择合适的测试框架和工具
+  - 编写正常路径（happy path）测试
+  - 编写边界条件测试
+  - 编写异常情况和错误处理测试
+  - 编写集成测试验证模块间协作
+  - 达到目标代码覆盖率（通常80%+）
+  - 验证测试的可重复性和隔离性
+  - 添加测试文档说明测试意图
+
+best_practices:
+  python:
+    - 使用pytest框架和fixtures
+    - 遵循AAA模式 (Arrange-Act-Assert)
+    - 使用pytest.mark.parametrize进行参数化测试
+    - 模拟外部依赖使用unittest.mock
+    - 使用pytest-cov检查覆盖率
+    - 测试应该快速独立
+    - 使用有描述性的测试函数名称
+
+  javascript:
+    - 使用Jest框架和测试工具
+    - 编写describe-it结构清晰的测试
+    - 使用jest.mock()模拟依赖
+    - 使用beforeEach/afterEach设置清理
+    - 异步测试使用async/await或done()
+    - 检查Promise处理和rejection
+    - 使用coverage报告检查覆盖率
+
+  java:
+    - 使用JUnit框架
+    - 使用Mockito模拟依赖
+    - 编写清晰的setup/teardown
+    - 使用@ParameterizedTest进行参数化测试
+    - 使用AssertJ进行优雅的断言
+    - 测试应该独立运行
+    - 命名遵循testXxx()约定
+
+  go:
+    - 使用testing包和_test.go文件
+    - 测试函数签名: func TestXxx(t *testing.T)
+    - 使用t.Run()进行子测试
+    - 使用table-driven tests进行参数化
+    - 使用testify/assert简化断言
+    - 模拟使用接口
+    - 使用go test -cover检查覆盖率
+
+common_pitfalls:
+  - 测试过于依赖实现细节而非行为
+  - 缺少边界条件和异常情况测试
+  - 测试之间有依赖关系无法独立运行
+  - 模拟过度导致测试失去价值
+  - 测试运行太慢导致开发效率低
+  - 忽视性能测试和负载测试
+  - 没有维护测试导致测试失效
+
+acceptance_criteria:
+  - 覆盖所有关键代码路径
+  - 代码覆盖率达到目标（80%+）
+  - 所有测试通过且可重复运行
+  - 测试执行时间在可接受范围
+  - 测试代码清晰易维护
+  - 通过代码审查
+  - 文档说明测试策略
+
+examples:
+  - "为API端点编写单元测试"
+  - "编写数据库操作的集成测试"
+  - "实现登录流程的端到端测试"
