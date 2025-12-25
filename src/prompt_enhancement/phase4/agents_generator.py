@@ -122,7 +122,9 @@ class AgentsGenerator:
             logger.error(error_msg, exc_info=True)
             return False, error_msg
 
-    def restore_from_backup(self, backup_timestamp: Optional[str] = None) -> Tuple[bool, str]:
+    def restore_from_backup(
+        self, backup_timestamp: Optional[str] = None
+    ) -> Tuple[bool, str]:
         """
         Restore AGENTS.md from a backup.
 
@@ -190,7 +192,9 @@ class AgentsGenerator:
                 return False, "AGENTS.md does not start with markdown header"
 
             # Check for common sections
-            sections_count = len([line for line in content.split("\n") if line.startswith("##")])
+            sections_count = len(
+                [line for line in content.split("\n") if line.startswith("##")]
+            )
 
             return True, f"AGENTS.md is valid ({sections_count} sections found)"
 

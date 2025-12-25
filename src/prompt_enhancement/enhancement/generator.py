@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional, Tuple
 from openai import AuthenticationError, RateLimitError
-from openai import Timeout as OpenAITimeout
+from openai import APITimeoutError as OpenAITimeout
 
 from .context import ProjectContext
 from .prompt_builder import PromptBuilder
@@ -135,7 +135,9 @@ class EnhancementGenerator:
 
             if not is_valid:
                 logger.warning(f"Response validation failed: {violations}")
-                raise ValidationError(f"Response validation failed: {', '.join(violations)}")
+                raise ValidationError(
+                    f"Response validation failed: {', '.join(violations)}"
+                )
 
             # Success - return result
             elapsed = time.time() - start_time
@@ -146,7 +148,9 @@ class EnhancementGenerator:
 
             result = EnhancementResult(
                 original_prompt=user_prompt,
-                enhanced_prompt=self.response_validator.sanitize_response(response.content),
+                enhanced_prompt=self.response_validator.sanitize_response(
+                    response.content
+                ),
                 provider=response.provider,
                 tokens_input=response.tokens_input,
                 tokens_output=response.tokens_output,
@@ -249,7 +253,9 @@ class EnhancementGenerator:
             except RateLimitError as e:
                 # Might succeed on retry
                 if attempt < self.MAX_RETRIES:
-                    logger.warning(f"Rate limited, retrying... ({attempt + 1}/{self.MAX_RETRIES})")
+                    logger.warning(
+                        f"Rate limited, retrying... ({attempt + 1}/{self.MAX_RETRIES})"
+                    )
                     time.sleep(1)  # Brief backoff
                     continue
                 else:
@@ -259,7 +265,9 @@ class EnhancementGenerator:
             except OpenAITimeout as e:
                 # Might succeed on retry
                 if attempt < self.MAX_RETRIES:
-                    logger.warning(f"Timeout, retrying... ({attempt + 1}/{self.MAX_RETRIES})")
+                    logger.warning(
+                        f"Timeout, retrying... ({attempt + 1}/{self.MAX_RETRIES})"
+                    )
                     time.sleep(0.5)  # Brief backoff
                     continue
                 else:

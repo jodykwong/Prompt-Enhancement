@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ProjectInfo:
     """Extracted project information."""
+
     name: str
     description: str
     primary_language: str
@@ -70,8 +71,12 @@ class ContentExtractor:
         primary_language = self._detect_primary_language()
         version = self._extract_version()
 
-        setup_cmd, test_cmd, run_cmd, build_cmd = self._extract_commands(primary_language)
-        lint_cmd, format_cmd, type_check_cmd = self._extract_quality_commands(primary_language)
+        setup_cmd, test_cmd, run_cmd, build_cmd = self._extract_commands(
+            primary_language
+        )
+        lint_cmd, format_cmd, type_check_cmd = self._extract_quality_commands(
+            primary_language
+        )
 
         dependencies = self._extract_main_dependencies()
         code_style = self._extract_code_style_guidelines(primary_language)
@@ -94,7 +99,7 @@ class ContentExtractor:
             code_style_guidelines=code_style,
             project_structure=structure,
             protected_directories=protected_dirs,
-            additional_info=self._extract_additional_info(primary_language)
+            additional_info=self._extract_additional_info(primary_language),
         )
 
     def _extract_project_name(self) -> str:
@@ -128,7 +133,7 @@ class ContentExtractor:
             try:
                 with open(go_mod) as f:
                     first_line = f.readline()
-                    match = re.search(r'module\s+(.+)', first_line)
+                    match = re.search(r"module\s+(.+)", first_line)
                     if match:
                         return match.group(1).split("/")[-1]
             except IOError:
@@ -167,9 +172,11 @@ class ContentExtractor:
     def _detect_primary_language(self) -> str:
         """Detect primary programming language."""
         # Check for Python
-        if (self.project_root / "requirements.txt").exists() or \
-           (self.project_root / "pyproject.toml").exists() or \
-           (self.project_root / "setup.py").exists():
+        if (
+            (self.project_root / "requirements.txt").exists()
+            or (self.project_root / "pyproject.toml").exists()
+            or (self.project_root / "setup.py").exists()
+        ):
             return "Python"
 
         # Check for Node.js
@@ -185,13 +192,15 @@ class ContentExtractor:
             return "Rust"
 
         # Check for Java
-        if (self.project_root / "pom.xml").exists() or \
-           (self.project_root / "build.gradle").exists():
+        if (self.project_root / "pom.xml").exists() or (
+            self.project_root / "build.gradle"
+        ).exists():
             return "Java"
 
         # Check for C#
-        if (self.project_root / "*.csproj").exists() or \
-           (self.project_root / "*.sln").exists():
+        if (self.project_root / "*.csproj").exists() or (
+            self.project_root / "*.sln"
+        ).exists():
             return "C#"
 
         return "Unknown"
@@ -235,7 +244,7 @@ class ContentExtractor:
                 "pip install -r requirements.txt",
                 "pytest tests/ -v",
                 "python -m main",
-                None
+                None,
             )
         elif language == "Node.js":
             package_json = self.project_root / "package.json"
@@ -248,7 +257,7 @@ class ContentExtractor:
                             "npm install",
                             scripts.get("test", "npm test"),
                             scripts.get("start", "npm start"),
-                            scripts.get("build", "npm run build")
+                            scripts.get("build", "npm run build"),
                         )
                 except (json.JSONDecodeError, IOError):
                     pass
@@ -258,34 +267,26 @@ class ContentExtractor:
                 "go mod download",
                 "go test ./...",
                 "go run main.go",
-                "go build -o app"
+                "go build -o app",
             )
         elif language == "Rust":
-            return (
-                "cargo build",
-                "cargo test",
-                "cargo run",
-                "cargo build --release"
-            )
+            return ("cargo build", "cargo test", "cargo run", "cargo build --release")
         elif language == "Java":
             if (self.project_root / "pom.xml").exists():
                 return (
                     "mvn clean install",
                     "mvn test",
                     "mvn clean compile exec:java",
-                    "mvn package"
+                    "mvn package",
                 )
             else:
-                return (
-                    "gradle build",
-                    "gradle test",
-                    "gradle run",
-                    "gradle build"
-                )
+                return ("gradle build", "gradle test", "gradle run", "gradle build")
 
         return ("N/A", "N/A", "N/A", None)
 
-    def _extract_quality_commands(self, language: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    def _extract_quality_commands(
+        self, language: str
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """Extract lint, format, and type-check commands."""
         if language == "Python":
             lint_cmd = "pylint src/"
@@ -380,7 +381,14 @@ class ContentExtractor:
         self._build_tree_lines(self.project_root, lines, "", max_depth=3)
         return "\n".join(lines[:20])  # Limit to 20 lines
 
-    def _build_tree_lines(self, path: Path, lines: List[str], prefix: str, depth: int = 0, max_depth: int = 3) -> None:
+    def _build_tree_lines(
+        self,
+        path: Path,
+        lines: List[str],
+        prefix: str,
+        depth: int = 0,
+        max_depth: int = 3,
+    ) -> None:
         """Recursively build tree structure."""
         if depth >= max_depth:
             return
@@ -389,7 +397,8 @@ class ContentExtractor:
             items = sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name))
             # Skip hidden files and common ignore patterns
             items = [
-                item for item in items
+                item
+                for item in items
                 if not item.name.startswith(".")
                 and item.name not in ["__pycache__", "node_modules", ".git"]
             ]
@@ -401,7 +410,9 @@ class ContentExtractor:
 
                 if item.is_dir():
                     extension = "    " if is_last else "│   "
-                    self._build_tree_lines(item, lines, prefix + extension, depth + 1, max_depth)
+                    self._build_tree_lines(
+                        item, lines, prefix + extension, depth + 1, max_depth
+                    )
         except PermissionError:
             pass
 
@@ -432,12 +443,18 @@ class ContentExtractor:
                 try:
                     with open(package_json) as f:
                         data = json.load(f)
-                        info["node_version"] = data.get("engines", {}).get("node", "14.0+")
-                        info["package_manager"] = "npm" if (
-                            self.project_root / "package-lock.json"
-                        ).exists() else "yarn" if (
-                            self.project_root / "yarn.lock"
-                        ).exists() else "npm"
+                        info["node_version"] = data.get("engines", {}).get(
+                            "node", "14.0+"
+                        )
+                        info["package_manager"] = (
+                            "npm"
+                            if (self.project_root / "package-lock.json").exists()
+                            else (
+                                "yarn"
+                                if (self.project_root / "yarn.lock").exists()
+                                else "npm"
+                            )
+                        )
                 except (json.JSONDecodeError, IOError):
                     pass
 

@@ -82,12 +82,12 @@ class ErrorMessageFormatter:
         )
 
     @staticmethod
-    def _format_detection_failed(confidence: Optional[float] = None) -> UserErrorMessage:
+    def _format_detection_failed(
+        confidence: Optional[float] = None,
+    ) -> UserErrorMessage:
         """Format standards detection failed error."""
         confidence_pct = (
-            f"{int(confidence * 100)}%"
-            if confidence is not None
-            else "low"
+            f"{int(confidence * 100)}%" if confidence is not None else "low"
         )
 
         return UserErrorMessage(

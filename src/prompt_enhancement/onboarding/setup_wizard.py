@@ -134,7 +134,7 @@ class SetupWizard:
         # Save configuration
         if self.save_configuration(api_key, project_type, standards):
             print("\n✅ Setup Complete!")
-            print("You can now run: /pe \"your prompt\"")
+            print('You can now run: /pe "your prompt"')
             print("\n💡 Tip: Run /pe-help for full documentation")
             logger.info("Setup wizard completed successfully")
             return True
@@ -190,8 +190,14 @@ class SetupWizard:
 
         if detected:
             try:
-                response = input(f"Detected project type: {detected}\n" +
-                               "Is this correct? [Y/n]: ").strip().lower()
+                response = (
+                    input(
+                        f"Detected project type: {detected}\n"
+                        + "Is this correct? [Y/n]: "
+                    )
+                    .strip()
+                    .lower()
+                )
 
                 if response == "" or response == "y":
                     print()
@@ -218,18 +224,22 @@ class SetupWizard:
 
         try:
             # Naming convention
-            naming = input(
-                "Naming convention (snake_case/camelCase/other) [snake_case]: "
-            ).strip().lower()
+            naming = (
+                input("Naming convention (snake_case/camelCase/other) [snake_case]: ")
+                .strip()
+                .lower()
+            )
             if naming:
                 standards["naming_convention"] = naming
             else:
                 standards["naming_convention"] = "snake_case"
 
             # Test framework
-            framework = input(
-                "Test framework (pytest/unittest/jest/other) [pytest]: "
-            ).strip().lower()
+            framework = (
+                input("Test framework (pytest/unittest/jest/other) [pytest]: ")
+                .strip()
+                .lower()
+            )
             if framework:
                 standards["test_framework"] = framework
             else:

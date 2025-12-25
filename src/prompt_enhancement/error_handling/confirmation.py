@@ -67,13 +67,15 @@ class DegradationConfirmation:
             prompt_lines.append("")
 
         if interactive:
-            prompt_lines.extend([
-                "Would you like to:",
-                "[Y] Continue (Accept degraded quality)",
-                "[N] Stop (Cancel enhancement)",
-                "[T] Troubleshoot (View diagnostic info)",
-                "",
-            ])
+            prompt_lines.extend(
+                [
+                    "Would you like to:",
+                    "[Y] Continue (Accept degraded quality)",
+                    "[N] Stop (Cancel enhancement)",
+                    "[T] Troubleshoot (View diagnostic info)",
+                    "",
+                ]
+            )
 
         return "\n".join(prompt_lines)
 
@@ -116,13 +118,15 @@ class DegradationConfirmation:
                 status = "✓" if file_path not in diagnostic.missing_files else "✗"
                 lines.append(f"  {status} {file_path}")
 
-        lines.extend([
-            "",
-            "Would you like to:",
-            "[R] Retry after fixing",
-            "[C] Continue anyway (degraded mode)",
-            "[N] Cancel",
-        ])
+        lines.extend(
+            [
+                "",
+                "Would you like to:",
+                "[R] Retry after fixing",
+                "[C] Continue anyway (degraded mode)",
+                "[N] Cancel",
+            ]
+        )
 
         return "\n".join(lines)
 
@@ -182,7 +186,9 @@ class DiagnosticBuilder:
         self.fix_suggestions.append(suggestion)
         return self
 
-    def add_checked_file(self, file_path: str, exists: bool = True) -> "DiagnosticBuilder":
+    def add_checked_file(
+        self, file_path: str, exists: bool = True
+    ) -> "DiagnosticBuilder":
         """Add a checked file."""
         self.checked_files.append(file_path)
         if not exists:

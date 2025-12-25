@@ -42,7 +42,9 @@ class OverrideParser:
 
         for override in override_flags:
             if "=" not in override:
-                errors.append(f"Invalid override format: {override} (expected key=value)")
+                errors.append(
+                    f"Invalid override format: {override} (expected key=value)"
+                )
                 continue
 
             key, value = override.split("=", 1)

@@ -53,7 +53,9 @@ class GitHistoryResult:
     git_available: bool
     total_commits: Optional[int]
     current_branch: Optional[str]
-    recent_commits: List[CommitInfo]  # FIX #4: Changed from List[str] to List[CommitInfo]
+    recent_commits: List[
+        CommitInfo
+    ]  # FIX #4: Changed from List[str] to List[CommitInfo]
     contributors: List[str]
     commits_per_week: Optional[float]
     first_commit_date: Optional[str]
@@ -358,7 +360,11 @@ class GitHistoryDetector:
             # Analyze naming patterns
             if "feature/" in branch_name or "/feature/" in branch_name:
                 structure["feature_branches"] += 1
-            elif "bugfix/" in branch_name or "fix/" in branch_name or "/bugfix/" in branch_name:
+            elif (
+                "bugfix/" in branch_name
+                or "fix/" in branch_name
+                or "/bugfix/" in branch_name
+            ):
                 structure["bugfix_branches"] += 1
             elif "release/" in branch_name or "/release/" in branch_name:
                 structure["release_branches"] += 1
@@ -415,12 +421,14 @@ class GitHistoryDetector:
                     if message.startswith("Merge ") and len(message) < 30:
                         continue
 
-                    commits.append(CommitInfo(
-                        message=message_clean,
-                        author=author,
-                        date=date,
-                        hash=hash_short
-                    ))
+                    commits.append(
+                        CommitInfo(
+                            message=message_clean,
+                            author=author,
+                            date=date,
+                            hash=hash_short,
+                        )
+                    )
             except Exception as e:
                 logger.debug(f"Error parsing commit line: {e}")
                 continue
@@ -446,9 +454,7 @@ class GitHistoryDetector:
         """
         # Use git shortlog to get contributors efficiently
         # NOTE: shortlog doesn't support --max-count, we limit in Python instead
-        shortlog_output = self._run_git_command(
-            ["git", "shortlog", "-sn", "--all"]
-        )
+        shortlog_output = self._run_git_command(["git", "shortlog", "-sn", "--all"])
 
         contributors = []
         if shortlog_output:
@@ -470,7 +476,7 @@ class GitHistoryDetector:
                     continue
 
         # FIX #3: Limit to top 5 contributors
-        return contributors[:self.TOP_CONTRIBUTORS_LIMIT]
+        return contributors[: self.TOP_CONTRIBUTORS_LIMIT]
 
     # ========================================================================
     # Statistics Calculation
@@ -520,12 +526,16 @@ class GitHistoryDetector:
                             if " " in date_str:
                                 datetime_part, tz_part = date_str.rsplit(" ", 1)
                                 # Parse datetime
-                                dt = datetime.strptime(datetime_part, "%Y-%m-%d %H:%M:%S")
+                                dt = datetime.strptime(
+                                    datetime_part, "%Y-%m-%d %H:%M:%S"
+                                )
                                 # Handle timezone (+0000 or -0500 etc.)
                                 if tz_part.startswith(("+", "-")):
                                     tz_hours = int(tz_part[1:3])
                                     tz_mins = int(tz_part[3:5])
-                                    tz_offset = timedelta(hours=tz_hours, minutes=tz_mins)
+                                    tz_offset = timedelta(
+                                        hours=tz_hours, minutes=tz_mins
+                                    )
                                     if tz_part.startswith("-"):
                                         tz_offset = -tz_offset
                                     # Make timezone-aware
@@ -536,7 +546,9 @@ class GitHistoryDetector:
                                     date_obj = dt.replace(tzinfo=timezone.utc)
                             else:
                                 # Fallback: parse as UTC
-                                date_obj = datetime.fromisoformat(date_str).replace(tzinfo=timezone.utc)
+                                date_obj = datetime.fromisoformat(date_str).replace(
+                                    tzinfo=timezone.utc
+                                )
                             all_dates.append(date_obj)
                         except (ValueError, IndexError):
                             # Skip malformed dates
@@ -569,7 +581,9 @@ class GitHistoryDetector:
                     last_commit_date = last_commit_date.replace(tzinfo=timezone.utc)
 
                 days_since_last = (now - last_commit_date).days
-                stats["is_actively_maintained"] = days_since_last < self.ACTIVE_MAINTENANCE_DAYS
+                stats["is_actively_maintained"] = (
+                    days_since_last < self.ACTIVE_MAINTENANCE_DAYS
+                )
 
         except Exception as e:
             logger.debug(f"Error calculating statistics: {e}")

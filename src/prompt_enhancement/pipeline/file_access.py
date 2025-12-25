@@ -20,6 +20,7 @@ MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 @dataclass
 class FileAccessReport:
     """Report on file access restrictions encountered during analysis"""
+
     total_files_attempted: int = 0
     files_successfully_accessed: int = 0
     files_access_denied: int = 0
@@ -51,7 +52,9 @@ class FileAccessHandler:
         self.files_access_denied = 0
         self.inaccessible_paths: List[str] = []
         self.attempted_paths: Dict[str, bool] = {}  # Track success/failure
-        self.visited_inodes: Set[int] = set()  # Track visited inodes for symlink loop detection
+        self.visited_inodes: Set[int] = (
+            set()
+        )  # Track visited inodes for symlink loop detection
 
         # Set and validate project root
         self.project_root: Optional[Path] = None
@@ -75,9 +78,9 @@ class FileAccessHandler:
         """
         # Check for Claude Code environment indicators
         claude_indicators = [
-            os.environ.get('CLAUDE_CODE_SESSION'),
-            os.environ.get('ANTHROPIC_CLI_VERSION'),
-            (self.project_root / '.claude').exists(),
+            os.environ.get("CLAUDE_CODE_SESSION"),
+            os.environ.get("ANTHROPIC_CLI_VERSION"),
+            (self.project_root / ".claude").exists(),
         ]
 
         return any(claude_indicators)
@@ -102,7 +105,9 @@ class FileAccessHandler:
                 path_str = str(path)
                 # Allow paths under project root OR under system temp directories
                 is_under_project_root = path_str.startswith(str(self.project_root))
-                is_temp_dir = path_str.startswith('/tmp/') or path_str.startswith('/var/tmp/')
+                is_temp_dir = path_str.startswith("/tmp/") or path_str.startswith(
+                    "/var/tmp/"
+                )
 
                 if not (is_under_project_root or is_temp_dir):
                     logger.warning(f"Path traversal attempt blocked: {file_path}")
@@ -114,10 +119,7 @@ class FileAccessHandler:
             return None
 
     def try_read_file(
-        self,
-        file_path: str,
-        encoding: str = "utf-8",
-        max_size: Optional[int] = None
+        self, file_path: str, encoding: str = "utf-8", max_size: Optional[int] = None
     ) -> Optional[str]:
         """
         Safely read file content, returning None if access denied.
@@ -196,7 +198,9 @@ class FileAccessHandler:
             self.files_access_denied += 1
             self.inaccessible_paths.append(str(file_path))
             self.attempted_paths[str(file_path)] = False
-            logger.warning(f"Unexpected error reading file {file_path}: {e}", exc_info=True)
+            logger.warning(
+                f"Unexpected error reading file {file_path}: {e}", exc_info=True
+            )
             return None
 
     def safe_scan_directory(
@@ -205,7 +209,7 @@ class FileAccessHandler:
         pattern: str = "*",
         recursive: bool = True,
         max_depth: Optional[int] = None,
-        follow_symlinks: bool = False
+        follow_symlinks: bool = False,
     ) -> Tuple[List[str], List[str]]:
         """
         Scan directory safely, returning (accessible_files, denied_paths).
@@ -264,7 +268,9 @@ class FileAccessHandler:
                                 # Check if we've seen this inode before
                                 inode = file_path.stat(follow_symlinks=False).st_ino
                                 if inode in self.visited_inodes:
-                                    logger.debug(f"Symlink loop detected, skipping: {file_path}")
+                                    logger.debug(
+                                        f"Symlink loop detected, skipping: {file_path}"
+                                    )
                                     continue
                                 self.visited_inodes.add(inode)
                             except OSError:
@@ -305,16 +311,14 @@ class FileAccessHandler:
         except Exception as e:
             # Unexpected error - log with stack trace
             denied_paths.append(directory_path)
-            logger.warning(f"Unexpected error scanning {directory_path}: {e}", exc_info=True)
+            logger.warning(
+                f"Unexpected error scanning {directory_path}: {e}", exc_info=True
+            )
 
         return accessible_files, denied_paths
 
     def _scan_with_depth_limit(
-        self,
-        base_path: Path,
-        pattern: str,
-        max_depth: int,
-        follow_symlinks: bool
+        self, base_path: Path, pattern: str, max_depth: int, follow_symlinks: bool
     ) -> Tuple[List[str], List[str]]:
         """
         Efficiently scan directory with depth limit using iterative approach.
@@ -389,7 +393,9 @@ class FileAccessHandler:
         """
         # Calculate access coverage
         if self.total_files_attempted > 0:
-            access_coverage = (self.files_successfully_accessed / self.total_files_attempted) * 100
+            access_coverage = (
+                self.files_successfully_accessed / self.total_files_attempted
+            ) * 100
         else:
             access_coverage = 100.0
 

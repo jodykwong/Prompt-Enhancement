@@ -78,6 +78,7 @@ class ProjectFingerprint:
 @dataclass
 class TimeBudget:
     """Time budget allocation for phases."""
+
     total_seconds: float
     analysis_seconds: float
     standards_seconds: float
@@ -126,7 +127,10 @@ class TimeBudget:
         # Warn if any phase has less than minimum time (except cache)
         min_phase_time = 0.5
         for name, value in values.items():
-            if name not in ["total_seconds", "cache_seconds"] and 0 < value < min_phase_time:
+            if (
+                name not in ["total_seconds", "cache_seconds"]
+                and 0 < value < min_phase_time
+            ):
                 logger.warning(
                     f"{name} ({value}s) is very low (< {min_phase_time}s). "
                     f"May not be sufficient for proper execution."
@@ -152,6 +156,7 @@ class TimeBudget:
 @dataclass
 class PerformanceMetrics:
     """Performance metrics snapshot."""
+
     total_execution_time: float
     phase_times: Dict[str, float] = field(default_factory=dict)
     cache_hit: bool = False
@@ -227,7 +232,9 @@ class PerformanceTracker:
         remaining = total_seconds - elapsed
         return remaining
 
-    def check_soft_timeout(self, soft_timeout_seconds: float = SOFT_TIMEOUT_SECONDS) -> bool:
+    def check_soft_timeout(
+        self, soft_timeout_seconds: float = SOFT_TIMEOUT_SECONDS
+    ) -> bool:
         """
         Check if soft timeout (performance target) exceeded.
 
@@ -240,10 +247,14 @@ class PerformanceTracker:
         elapsed = time.perf_counter() - self.start_time
         exceeded = elapsed > soft_timeout_seconds
         if exceeded:
-            logger.warning(f"Soft timeout exceeded: {elapsed:.1f}s > {soft_timeout_seconds}s")
+            logger.warning(
+                f"Soft timeout exceeded: {elapsed:.1f}s > {soft_timeout_seconds}s"
+            )
         return exceeded
 
-    def check_hard_timeout(self, hard_timeout_seconds: float = HARD_TIMEOUT_SECONDS) -> bool:
+    def check_hard_timeout(
+        self, hard_timeout_seconds: float = HARD_TIMEOUT_SECONDS
+    ) -> bool:
         """
         Check if hard timeout (Claude Code limit) exceeded.
 
@@ -256,10 +267,14 @@ class PerformanceTracker:
         elapsed = time.perf_counter() - self.start_time
         exceeded = elapsed > hard_timeout_seconds
         if exceeded:
-            logger.error(f"Hard timeout exceeded: {elapsed:.1f}s > {hard_timeout_seconds}s")
+            logger.error(
+                f"Hard timeout exceeded: {elapsed:.1f}s > {hard_timeout_seconds}s"
+            )
         return exceeded
 
-    def is_over_budget(self, phase_budget_seconds: float, elapsed_seconds: float) -> bool:
+    def is_over_budget(
+        self, phase_budget_seconds: float, elapsed_seconds: float
+    ) -> bool:
         """
         Check if phase is over budget.
 
@@ -272,14 +287,13 @@ class PerformanceTracker:
         """
         over = elapsed_seconds > phase_budget_seconds
         if over:
-            logger.warning(f"Phase over budget: {elapsed_seconds:.1f}s > {phase_budget_seconds}s")
+            logger.warning(
+                f"Phase over budget: {elapsed_seconds:.1f}s > {phase_budget_seconds}s"
+            )
         return over
 
     def set_cache(
-        self,
-        key: str,
-        value: Any,
-        ttl_seconds: float = CACHE_DEFAULT_TTL_SECONDS
+        self, key: str, value: Any, ttl_seconds: float = CACHE_DEFAULT_TTL_SECONDS
     ) -> None:
         """
         Store value in cache with LRU eviction (HIGH-1 fix).
@@ -298,7 +312,7 @@ class PerformanceTracker:
                 # Evict least recently used entry
                 lru_key = min(
                     self.cache.keys(),
-                    key=lambda k: self.cache[k][2]  # Sort by last_access_time
+                    key=lambda k: self.cache[k][2],  # Sort by last_access_time
                 )
                 del self.cache[lru_key]
                 logger.debug(f"Cache evicted (LRU): {lru_key}")
@@ -306,7 +320,9 @@ class PerformanceTracker:
             # Store: (value, expiry_time, last_access_time)
             self.cache[key] = (value, expiry_time, current_time)
 
-        logger.debug(f"Cached: {key} (TTL: {ttl_seconds}s, size: {len(self.cache)}/{self.CACHE_MAX_SIZE})")
+        logger.debug(
+            f"Cached: {key} (TTL: {ttl_seconds}s, size: {len(self.cache)}/{self.CACHE_MAX_SIZE})"
+        )
 
     def get_cache(self, key: str) -> Optional[Any]:
         """
@@ -378,10 +394,14 @@ class PerformanceTracker:
                 return count
             else:
                 # Clear namespace-specific entries (MEDIUM-6 fix support)
-                keys_to_remove = [k for k in self.cache.keys() if k.startswith(namespace)]
+                keys_to_remove = [
+                    k for k in self.cache.keys() if k.startswith(namespace)
+                ]
                 for key in keys_to_remove:
                     del self.cache[key]
-                logger.info(f"Cache namespace '{namespace}' cleared: {len(keys_to_remove)} entries removed")
+                logger.info(
+                    f"Cache namespace '{namespace}' cleared: {len(keys_to_remove)} entries removed"
+                )
                 return len(keys_to_remove)
 
     def get_metrics(self) -> PerformanceMetrics:
@@ -411,7 +431,7 @@ class PerformanceTracker:
             phase_times=phase_times_copy,
             cache_hit=cache_hit,
             cache_age_seconds=cache_age,
-            quality_level=quality_level
+            quality_level=quality_level,
         )
 
         logger.info(

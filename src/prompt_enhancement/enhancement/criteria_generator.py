@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class ArtifactType(Enum):
     """Type of artifact that should be created/modified."""
+
     CODE_FILE = "code_file"
     TEST_FILE = "test_file"
     CONFIG_FILE = "config_file"
@@ -36,7 +37,9 @@ class VerificationCriterion:
     criterion_type: str  # "artifact", "behavior", "code_review", "test"
     description: str  # What to verify
     artifact_type: Optional[ArtifactType] = None  # What artifact to check
-    artifact_path_pattern: Optional[str] = None  # Where to find it (e.g., "src/**/*.py")
+    artifact_path_pattern: Optional[str] = (
+        None  # Where to find it (e.g., "src/**/*.py")
+    )
     expected_behavior: Optional[str] = None  # What should happen
     code_review_checklist: List[str] = field(default_factory=list)  # Code review items
     test_approach: Optional[str] = None  # How to test it
@@ -50,7 +53,9 @@ class CodeExample:
     content: str  # Code content
     language: str  # Programming language
     filename_example: str  # Example filename
-    follows_standards: Dict[str, str] = field(default_factory=dict)  # Which standards applied
+    follows_standards: Dict[str, str] = field(
+        default_factory=dict
+    )  # Which standards applied
     explanation: str = ""  # What the example shows
     project_type_note: str = ""  # Note about applicability
 
@@ -75,7 +80,9 @@ class GeneratedCriteria:
 
     step: ImplementationStep  # Associated step
     verification_criteria: List[VerificationCriterion]  # Verification criteria
-    code_examples: List[CodeExample] = field(default_factory=list)  # Code examples (AC4)
+    code_examples: List[CodeExample] = field(
+        default_factory=list
+    )  # Code examples (AC4)
     testing_guidance: Optional[TestingGuidance] = None  # Testing guidance (AC5)
     common_pitfalls: List[str] = field(default_factory=list)  # Pitfalls to avoid
     debugging_tips: List[str] = field(default_factory=list)  # Debugging advice
@@ -100,7 +107,9 @@ class CriteriaGenerator:
             project_context: Project context from Story 3.1
         """
         self.context = project_context
-        logger.debug(f"Initialized CriteriaGenerator for {project_context.project_name}")
+        logger.debug(
+            f"Initialized CriteriaGenerator for {project_context.project_name}"
+        )
 
     def generate_criteria_for_step(
         self,
@@ -122,7 +131,9 @@ class CriteriaGenerator:
         Returns:
             GeneratedCriteria with all verification components
         """
-        logger.info(f"Generating criteria for step {step.number}: {step.content[:50]}...")
+        logger.info(
+            f"Generating criteria for step {step.number}: {step.content[:50]}..."
+        )
 
         # Generate base verification criteria (AC2)
         criteria = self._generate_verification_criteria(step, step_index)
@@ -146,7 +157,9 @@ class CriteriaGenerator:
             debugging_tips=tips,
         )
 
-        logger.debug(f"Generated {len(criteria)} criteria with {len(examples)} examples")
+        logger.debug(
+            f"Generated {len(criteria)} criteria with {len(examples)} examples"
+        )
         return result
 
     def _generate_verification_criteria(
@@ -161,46 +174,56 @@ class CriteriaGenerator:
         # Artifact criterion - what should be created/modified
         artifact = self._identify_artifact(step.content, step_index)
         if artifact:
-            criteria.append(VerificationCriterion(
-                step_number=step_num,
-                criterion_type="artifact",
-                description=f"Create or modify {artifact['name']}",
-                artifact_type=artifact.get('type', ArtifactType.CODE_FILE),
-                artifact_path_pattern=artifact.get('pattern'),
-                success_indicator=f"{artifact['name']} exists at expected location",
-            ))
+            criteria.append(
+                VerificationCriterion(
+                    step_number=step_num,
+                    criterion_type="artifact",
+                    description=f"Create or modify {artifact['name']}",
+                    artifact_type=artifact.get("type", ArtifactType.CODE_FILE),
+                    artifact_path_pattern=artifact.get("pattern"),
+                    success_indicator=f"{artifact['name']} exists at expected location",
+                )
+            )
 
         # Behavior criterion - what should happen
         behavior = self._identify_behavior(step.content)
         if behavior:
-            criteria.append(VerificationCriterion(
-                step_number=step_num,
-                criterion_type="behavior",
-                description=behavior['description'],
-                expected_behavior=behavior['expected'],
-                success_indicator=behavior.get('success_indicator', 'Feature works as expected'),
-            ))
+            criteria.append(
+                VerificationCriterion(
+                    step_number=step_num,
+                    criterion_type="behavior",
+                    description=behavior["description"],
+                    expected_behavior=behavior["expected"],
+                    success_indicator=behavior.get(
+                        "success_indicator", "Feature works as expected"
+                    ),
+                )
+            )
 
         # Code review criterion - following standards
         code_review = self._generate_code_review_checklist(step.content)
         if code_review:
-            criteria.append(VerificationCriterion(
-                step_number=step_num,
-                criterion_type="code_review",
-                description="Code review checklist",
-                code_review_checklist=code_review,
-                success_indicator="All code review items checked",
-            ))
+            criteria.append(
+                VerificationCriterion(
+                    step_number=step_num,
+                    criterion_type="code_review",
+                    description="Code review checklist",
+                    code_review_checklist=code_review,
+                    success_indicator="All code review items checked",
+                )
+            )
 
         # Ensure at least one criterion per step
         if not criteria:
-            criteria.append(VerificationCriterion(
-                step_number=step_num,
-                criterion_type="behavior",
-                description="Implementation complete",
-                expected_behavior="Step implementation is complete and functional",
-                success_indicator="Verify step produces expected result",
-            ))
+            criteria.append(
+                VerificationCriterion(
+                    step_number=step_num,
+                    criterion_type="behavior",
+                    description="Implementation complete",
+                    expected_behavior="Step implementation is complete and functional",
+                    success_indicator="Verify step produces expected result",
+                )
+            )
 
         return criteria
 
@@ -209,37 +232,45 @@ class CriteriaGenerator:
         content_lower = step_content.lower()
 
         # Check for test file
-        if any(word in content_lower for word in ["test", "unit test", "integration test"]):
+        if any(
+            word in content_lower for word in ["test", "unit test", "integration test"]
+        ):
             test_result = self.context.detected_standards.get("test_framework")
             framework = test_result.detected_value if test_result else "pytest"
             path_pattern = self._get_test_path_pattern(framework)
             return {
-                'name': 'test file',
-                'type': ArtifactType.TEST_FILE,
-                'pattern': path_pattern,
+                "name": "test file",
+                "type": ArtifactType.TEST_FILE,
+                "pattern": path_pattern,
             }
 
         # Check for configuration
-        if any(word in content_lower for word in ["config", "configure", "settings", "environment"]):
+        if any(
+            word in content_lower
+            for word in ["config", "configure", "settings", "environment"]
+        ):
             return {
-                'name': 'configuration file',
-                'type': ArtifactType.CONFIG_FILE,
-                'pattern': '*.yaml/*.yml/*.json/*.toml',
+                "name": "configuration file",
+                "type": ArtifactType.CONFIG_FILE,
+                "pattern": "*.yaml/*.yml/*.json/*.toml",
             }
 
         # Check for documentation
-        if any(word in content_lower for word in ["document", "readme", "docstring", "comment"]):
+        if any(
+            word in content_lower
+            for word in ["document", "readme", "docstring", "comment"]
+        ):
             return {
-                'name': 'documentation',
-                'type': ArtifactType.DOCUMENTATION,
-                'pattern': '*.md/*.rst/*.txt',
+                "name": "documentation",
+                "type": ArtifactType.DOCUMENTATION,
+                "pattern": "*.md/*.rst/*.txt",
             }
 
         # Default: code file
         return {
-            'name': 'code file',
-            'type': ArtifactType.CODE_FILE,
-            'pattern': f'src/**/*.{self._get_file_extension()}',
+            "name": "code file",
+            "type": ArtifactType.CODE_FILE,
+            "pattern": f"src/**/*.{self._get_file_extension()}",
         }
 
     def _identify_behavior(self, step_content: str) -> Optional[Dict]:
@@ -252,18 +283,18 @@ class CriteriaGenerator:
             for phrase in ["should", "will"]:
                 if phrase in content_lower:
                     idx = content_lower.index(phrase)
-                    behavior_text = step_content[idx:idx+100].strip()
+                    behavior_text = step_content[idx : idx + 100].strip()
                     return {
-                        'description': 'Verify expected behavior',
-                        'expected': behavior_text,
-                        'success_indicator': 'Behavior verified manually or through tests',
+                        "description": "Verify expected behavior",
+                        "expected": behavior_text,
+                        "success_indicator": "Behavior verified manually or through tests",
                     }
 
         # Default behavior
         return {
-            'description': 'Verify implementation works correctly',
-            'expected': step_content,
-            'success_indicator': 'Step produces expected result',
+            "description": "Verify implementation works correctly",
+            "expected": step_content,
+            "success_indicator": "Step produces expected result",
         }
 
     def _generate_code_review_checklist(self, step_content: str) -> List[str]:
@@ -313,23 +344,31 @@ class CriteriaGenerator:
             naming_result = self.context.detected_standards.get("naming_conventions")
             org_result = self.context.detected_standards.get("code_organization")
 
-            examples.append(CodeExample(
-                content=example_code,
-                language=language,
-                filename_example=self._get_example_filename(step.content, language),
-                follows_standards={
-                    'naming': naming_result.detected_value if naming_result else 'default',
-                    'organization': org_result.detected_value if org_result else 'default',
-                    'language': language,
-                    'framework': framework,
-                },
-                explanation=f"Example showing {step.content[:40]}...",
-                project_type_note=f"[Example for {framework}]",
-            ))
+            examples.append(
+                CodeExample(
+                    content=example_code,
+                    language=language,
+                    filename_example=self._get_example_filename(step.content, language),
+                    follows_standards={
+                        "naming": (
+                            naming_result.detected_value if naming_result else "default"
+                        ),
+                        "organization": (
+                            org_result.detected_value if org_result else "default"
+                        ),
+                        "language": language,
+                        "framework": framework,
+                    },
+                    explanation=f"Example showing {step.content[:40]}...",
+                    project_type_note=f"[Example for {framework}]",
+                )
+            )
 
         return examples
 
-    def _create_example_code(self, step_content: str, language: str, framework: str) -> Optional[str]:
+    def _create_example_code(
+        self, step_content: str, language: str, framework: str
+    ) -> Optional[str]:
         """Create code example following project standards (AC4)."""
         content_lower = step_content.lower()
 
@@ -398,7 +437,9 @@ async def create_item(item: Item) -> ItemResponse:
                 step_number=step.number,
                 framework="pytest",
                 test_structure="def test_feature_name(): # Arrange, Act, Assert",
-                fixtures_needed=["fixture_name"] if "database" in step.content.lower() else [],
+                fixtures_needed=(
+                    ["fixture_name"] if "database" in step.content.lower() else []
+                ),
                 mocking_approach="from unittest.mock import Mock, patch",
                 assertion_style="assert result == expected",
                 file_location=self._get_test_path_pattern(framework),
@@ -432,11 +473,13 @@ async def create_item(item: Item) -> ItemResponse:
         pitfalls = []
 
         # Generic pitfalls that apply to most implementation
-        pitfalls.extend([
-            "Don't forget to handle error cases",
-            "Ensure proper resource cleanup",
-            "Validate all inputs before processing",
-        ])
+        pitfalls.extend(
+            [
+                "Don't forget to handle error cases",
+                "Ensure proper resource cleanup",
+                "Validate all inputs before processing",
+            ]
+        )
 
         # Context-specific pitfalls
         if "async" in step_content.lower():
@@ -458,7 +501,9 @@ async def create_item(item: Item) -> ItemResponse:
 
         # Context-specific tips
         if "data" in step_content.lower():
-            tips.append("Inspect intermediate data structures with pprint or json.dumps")
+            tips.append(
+                "Inspect intermediate data structures with pprint or json.dumps"
+            )
         if "network" in step_content.lower() or "api" in step_content.lower():
             tips.append("Check network requests using curl or Postman")
         if "database" in step_content.lower():

@@ -103,7 +103,9 @@ class FrameworkDetectionResult:
     test_directories: List[str] = field(default_factory=list)
     test_file_patterns: List[str] = field(default_factory=list)
     configuration_files: List[str] = field(default_factory=list)
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
     version: int = 1
 
 
@@ -142,7 +144,11 @@ class FrameworkDetector:
 
     # JavaScript framework configuration files
     JS_CONFIG_FILES = {
-        TestFrameworkType.JEST: ["jest.config.js", "jest.config.ts", "jest.config.json"],
+        TestFrameworkType.JEST: [
+            "jest.config.js",
+            "jest.config.ts",
+            "jest.config.json",
+        ],
         TestFrameworkType.MOCHA: [".mocharc.js", ".mocharc.json", ".mocharc.yaml"],
         TestFrameworkType.VITEST: ["vite.config.ts", "vite.config.js"],
     }
@@ -202,7 +208,9 @@ class FrameworkDetector:
         self.timeout_sec = timeout_sec
         self.start_time = time.perf_counter()
         self.performance_tracker = performance_tracker  # FIX CRITICAL #1
-        self.file_access_handler = file_access_handler or FileAccessHandler(str(project_root))  # FIX CRITICAL #2
+        self.file_access_handler = file_access_handler or FileAccessHandler(
+            str(project_root)
+        )  # FIX CRITICAL #2
 
     # ========================================================================
     # Main Entry Point
@@ -260,7 +268,9 @@ class FrameworkDetector:
 
             if detected_frameworks:
                 # Sort by confidence
-                sorted_frameworks = sorted(detected_frameworks, key=lambda f: f.confidence, reverse=True)
+                sorted_frameworks = sorted(
+                    detected_frameworks, key=lambda f: f.confidence, reverse=True
+                )
                 primary_framework = sorted_frameworks[0].framework_type
                 overall_confidence = sorted_frameworks[0].confidence
 
@@ -294,10 +304,14 @@ class FrameworkDetector:
                 TestFrameworkDetection(
                     framework_type=TestFrameworkType.PYTEST,
                     confidence=self._calculate_framework_confidence(
-                        has_config=self._has_config_file(files_result, TestFrameworkType.PYTEST),
+                        has_config=self._has_config_file(
+                            files_result, TestFrameworkType.PYTEST
+                        ),
                         has_dependency=self._has_dependency(files_result, "pytest"),
                         has_imports=self._has_import_pattern(files_result, "pytest"),
-                        has_test_files=self._has_test_file_patterns(files_result),  # FIX MEDIUM #8
+                        has_test_files=self._has_test_file_patterns(
+                            files_result
+                        ),  # FIX MEDIUM #8
                     ),
                     evidence=self._get_pytest_evidence(files_result),
                 )
@@ -310,7 +324,9 @@ class FrameworkDetector:
                     framework_type=TestFrameworkType.UNITTEST,
                     confidence=self._calculate_framework_confidence(
                         has_imports=self._has_import_pattern(files_result, "unittest"),
-                        has_test_files=self._has_test_file_patterns(files_result),  # FIX MEDIUM #8
+                        has_test_files=self._has_test_file_patterns(
+                            files_result
+                        ),  # FIX MEDIUM #8
                     ),
                     evidence=self._get_unittest_evidence(files_result),
                 )
@@ -322,9 +338,13 @@ class FrameworkDetector:
                 TestFrameworkDetection(
                     framework_type=TestFrameworkType.NOSE,
                     confidence=self._calculate_framework_confidence(
-                        has_config=self._has_config_file(files_result, TestFrameworkType.NOSE),
+                        has_config=self._has_config_file(
+                            files_result, TestFrameworkType.NOSE
+                        ),
                         has_dependency=self._has_dependency(files_result, "nose"),
-                        has_test_files=self._has_test_file_patterns(files_result),  # FIX MEDIUM #8
+                        has_test_files=self._has_test_file_patterns(
+                            files_result
+                        ),  # FIX MEDIUM #8
                     ),
                     evidence=self._get_nose_evidence(files_result),
                 )
@@ -337,8 +357,12 @@ class FrameworkDetector:
                     framework_type=TestFrameworkType.HYPOTHESIS,
                     confidence=self._calculate_framework_confidence(
                         has_dependency=self._has_dependency(files_result, "hypothesis"),
-                        has_imports=self._has_import_pattern(files_result, "hypothesis"),
-                        has_test_files=self._has_test_file_patterns(files_result),  # FIX MEDIUM #8
+                        has_imports=self._has_import_pattern(
+                            files_result, "hypothesis"
+                        ),
+                        has_test_files=self._has_test_file_patterns(
+                            files_result
+                        ),  # FIX MEDIUM #8
                     ),
                     evidence=self._get_hypothesis_evidence(files_result),
                 )
@@ -360,10 +384,9 @@ class FrameworkDetector:
 
     def _has_nose_indicators(self, files_result: ProjectIndicatorResult) -> bool:
         """Check for nose indicators."""
-        return (
-            self._has_config_file(files_result, TestFrameworkType.NOSE)
-            or self._has_dependency(files_result, "nose")
-        )
+        return self._has_config_file(
+            files_result, TestFrameworkType.NOSE
+        ) or self._has_dependency(files_result, "nose")
 
     def _get_pytest_evidence(self, files_result: ProjectIndicatorResult) -> List[str]:
         """Get evidence for pytest detection."""
@@ -398,12 +421,13 @@ class FrameworkDetector:
 
         FIX MEDIUM #7: Hypothesis is a property-based testing library often used with pytest.
         """
-        return (
-            self._has_dependency(files_result, "hypothesis")
-            or self._has_import_pattern(files_result, "hypothesis")
-        )
+        return self._has_dependency(
+            files_result, "hypothesis"
+        ) or self._has_import_pattern(files_result, "hypothesis")
 
-    def _get_hypothesis_evidence(self, files_result: ProjectIndicatorResult) -> List[str]:
+    def _get_hypothesis_evidence(
+        self, files_result: ProjectIndicatorResult
+    ) -> List[str]:
         """
         Get evidence for hypothesis detection.
 
@@ -433,7 +457,9 @@ class FrameworkDetector:
                 TestFrameworkDetection(
                     framework_type=TestFrameworkType.JEST,
                     confidence=self._calculate_framework_confidence(
-                        has_config=self._has_config_file(files_result, TestFrameworkType.JEST),
+                        has_config=self._has_config_file(
+                            files_result, TestFrameworkType.JEST
+                        ),
                         has_dependency=self._has_dependency(files_result, "jest"),
                     ),
                     evidence=self._get_jest_evidence(files_result),
@@ -446,7 +472,9 @@ class FrameworkDetector:
                 TestFrameworkDetection(
                     framework_type=TestFrameworkType.MOCHA,
                     confidence=self._calculate_framework_confidence(
-                        has_config=self._has_config_file(files_result, TestFrameworkType.MOCHA),
+                        has_config=self._has_config_file(
+                            files_result, TestFrameworkType.MOCHA
+                        ),
                         has_dependency=self._has_dependency(files_result, "mocha"),
                     ),
                     evidence=self._get_mocha_evidence(files_result),
@@ -469,17 +497,15 @@ class FrameworkDetector:
 
     def _has_jest_indicators(self, files_result: ProjectIndicatorResult) -> bool:
         """Check for jest indicators."""
-        return (
-            self._has_config_file(files_result, TestFrameworkType.JEST)
-            or self._has_dependency(files_result, "jest")
-        )
+        return self._has_config_file(
+            files_result, TestFrameworkType.JEST
+        ) or self._has_dependency(files_result, "jest")
 
     def _has_mocha_indicators(self, files_result: ProjectIndicatorResult) -> bool:
         """Check for mocha indicators."""
-        return (
-            self._has_config_file(files_result, TestFrameworkType.MOCHA)
-            or self._has_dependency(files_result, "mocha")
-        )
+        return self._has_config_file(
+            files_result, TestFrameworkType.MOCHA
+        ) or self._has_dependency(files_result, "mocha")
 
     def _has_vitest_indicators(self, files_result: ProjectIndicatorResult) -> bool:
         """Check for vitest indicators."""
@@ -572,7 +598,9 @@ class FrameworkDetector:
             evidence.append("testng in dependencies")
         return evidence
 
-    def _extract_junit_version(self, files_result: ProjectIndicatorResult) -> Optional[str]:
+    def _extract_junit_version(
+        self, files_result: ProjectIndicatorResult
+    ) -> Optional[str]:
         """
         Extract JUnit version from dependencies.
 
@@ -587,7 +615,9 @@ class FrameworkDetector:
         if not files_result.metadata:
             return None
 
-        all_deps = (files_result.metadata.dependencies or []) + (files_result.metadata.dev_dependencies or [])
+        all_deps = (files_result.metadata.dependencies or []) + (
+            files_result.metadata.dev_dependencies or []
+        )
 
         for dep in all_deps:
             dep_str = str(dep).lower()
@@ -595,14 +625,14 @@ class FrameworkDetector:
             # JUnit 5 detection (org.junit.jupiter)
             if "org.junit.jupiter" in dep_str or "junit-jupiter" in dep_str:
                 # Try to extract version number
-                version_match = re.search(r'[:\s]5\.(\d+)', dep_str)
+                version_match = re.search(r"[:\s]5\.(\d+)", dep_str)
                 if version_match:
                     return f"5.{version_match.group(1)}"
                 return "5"
 
             # JUnit 4 detection (junit:junit)
-            if "junit:junit" in dep_str or re.search(r'\bjunit\b.*4\.', dep_str):
-                version_match = re.search(r'[:\s]4\.(\d+)', dep_str)
+            if "junit:junit" in dep_str or re.search(r"\bjunit\b.*4\.", dep_str):
+                version_match = re.search(r"[:\s]4\.(\d+)", dep_str)
                 if version_match:
                     return f"4.{version_match.group(1)}"
                 return "4"
@@ -650,7 +680,9 @@ class FrameworkDetector:
         if not files_result.files_found:
             return False
 
-        config_patterns = self.PYTHON_CONFIG_FILES.get(framework) or self.JS_CONFIG_FILES.get(framework)
+        config_patterns = self.PYTHON_CONFIG_FILES.get(
+            framework
+        ) or self.JS_CONFIG_FILES.get(framework)
         if not config_patterns:
             return False
 
@@ -662,12 +694,16 @@ class FrameworkDetector:
 
         return False
 
-    def _has_dependency(self, files_result: ProjectIndicatorResult, dep_name: str) -> bool:
+    def _has_dependency(
+        self, files_result: ProjectIndicatorResult, dep_name: str
+    ) -> bool:
         """Check if project has a dependency."""
         if not files_result.metadata:
             return False
 
-        all_deps = (files_result.metadata.dependencies or []) + (files_result.metadata.dev_dependencies or [])
+        all_deps = (files_result.metadata.dependencies or []) + (
+            files_result.metadata.dev_dependencies or []
+        )
 
         return any(dep_name.lower() in str(d).lower() for d in all_deps)
 
@@ -683,7 +719,9 @@ class FrameworkDetector:
         # Check if any files match test file patterns
         return any("test" in str(f).lower() for f in files_result.files_found)
 
-    def _has_import_pattern(self, files_result: ProjectIndicatorResult, module_name: str) -> bool:
+    def _has_import_pattern(
+        self, files_result: ProjectIndicatorResult, module_name: str
+    ) -> bool:
         """
         Check if test files contain import pattern.
 
@@ -714,7 +752,9 @@ class FrameworkDetector:
 
                 if content:
                     # Look for import pattern
-                    if re.search(rf"import\s+{module_name}|from\s+{module_name}", content):
+                    if re.search(
+                        rf"import\s+{module_name}|from\s+{module_name}", content
+                    ):
                         return True
             except Exception as e:
                 logger.debug(f"Error checking imports in {test_file}: {e}")

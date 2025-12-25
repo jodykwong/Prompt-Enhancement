@@ -87,8 +87,8 @@ class ErrorLogger:
 
         # Set format
         formatter = logging.Formatter(
-            '%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S',
+            "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
         self.handler.setFormatter(formatter)
 
@@ -190,22 +190,13 @@ class ErrorLogger:
 
         # Filter if specified
         if level_filter:
-            lines = [
-                l for l in lines
-                if level_filter.upper() in l
-            ]
+            lines = [l for l in lines if level_filter.upper() in l]
 
         if date_filter:
-            lines = [
-                l for l in lines
-                if date_filter in l
-            ]
+            lines = [l for l in lines if date_filter in l]
 
         if keyword_filter:
-            lines = [
-                l for l in lines
-                if keyword_filter.lower() in l.lower()
-            ]
+            lines = [l for l in lines if keyword_filter.lower() in l.lower()]
 
         # Return most recent entries (last N lines)
         return lines[-limit:] if len(lines) > limit else lines
@@ -347,9 +338,11 @@ class RecoveryHelper:
         for i, step in enumerate(steps, 1):
             lines.append(f"{i}. {step}")
 
-        lines.extend([
-            "",
-            "For more help: /pe-help",
-        ])
+        lines.extend(
+            [
+                "",
+                "For more help: /pe-help",
+            ]
+        )
 
         return "\n".join(lines)

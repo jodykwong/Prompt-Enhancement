@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class StepFormat(Enum):
     """Format of implementation steps detected."""
+
     NUMBERED = "numbered"  # 1. Step, 2. Step
     BULLETS = "bullets"  # - Step, * Step, • Step
     PROSE = "prose"  # Paragraph format with step markers
@@ -82,19 +83,69 @@ class StepExtractor:
 
     # Actionable keyword detection (AC1 validation)
     ACTIONABLE_VERBS = {
-        "create", "add", "implement", "write", "build", "setup", "configure",
-        "install", "run", "execute", "test", "verify", "validate", "check",
-        "update", "modify", "change", "refactor", "remove", "delete", "import",
-        "export", "deploy", "commit", "push", "review", "merge", "handle",
-        "catch", "throw", "raise", "fix", "debug", "optimize", "analyze",
-        "generate", "parse", "extract", "connect", "integrate", "sync",
-        "authenticate", "authorize", "encrypt", "decrypt", "hash", "validate",
+        "create",
+        "add",
+        "implement",
+        "write",
+        "build",
+        "setup",
+        "configure",
+        "install",
+        "run",
+        "execute",
+        "test",
+        "verify",
+        "validate",
+        "check",
+        "update",
+        "modify",
+        "change",
+        "refactor",
+        "remove",
+        "delete",
+        "import",
+        "export",
+        "deploy",
+        "commit",
+        "push",
+        "review",
+        "merge",
+        "handle",
+        "catch",
+        "throw",
+        "raise",
+        "fix",
+        "debug",
+        "optimize",
+        "analyze",
+        "generate",
+        "parse",
+        "extract",
+        "connect",
+        "integrate",
+        "sync",
+        "authenticate",
+        "authorize",
+        "encrypt",
+        "decrypt",
+        "hash",
+        "validate",
     }
 
     # Dependency keywords
     DEPENDENCY_KEYWORDS = {
-        "after", "before", "once", "first", "then", "next", "finally",
-        "subsequently", "following", "upon", "dependent on", "requires"
+        "after",
+        "before",
+        "once",
+        "first",
+        "then",
+        "next",
+        "finally",
+        "subsequently",
+        "following",
+        "upon",
+        "dependent on",
+        "requires",
     }
 
     def __init__(self):
@@ -113,7 +164,9 @@ class StepExtractor:
         Returns:
             ExtractedSteps with parsed steps and metadata
         """
-        logger.info(f"Extracting implementation steps from response ({len(llm_response)} chars)")
+        logger.info(
+            f"Extracting implementation steps from response ({len(llm_response)} chars)"
+        )
 
         if not llm_response or not llm_response.strip():
             logger.warning("Empty response provided to step extractor")
@@ -140,14 +193,18 @@ class StepExtractor:
 
         if not steps:
             # Fallback: treat response as single step
-            logger.warning("Could not extract structured steps, treating as single step")
-            steps = [ImplementationStep(
-                number=1,
-                content=llm_response.strip(),
-                original_text=llm_response.strip(),
-                format_detected=StepFormat.UNKNOWN,
-                is_actionable=self._is_actionable(llm_response),
-            )]
+            logger.warning(
+                "Could not extract structured steps, treating as single step"
+            )
+            steps = [
+                ImplementationStep(
+                    number=1,
+                    content=llm_response.strip(),
+                    original_text=llm_response.strip(),
+                    format_detected=StepFormat.UNKNOWN,
+                    is_actionable=self._is_actionable(llm_response),
+                )
+            ]
             format_type = StepFormat.UNKNOWN
 
         # Post-processing
@@ -180,7 +237,7 @@ class StepExtractor:
     def _extract_numbered_steps(self, response: str) -> List[ImplementationStep]:
         """Extract numbered steps (1. Step, 2. Step)."""
         steps = []
-        lines = response.split('\n')
+        lines = response.split("\n")
 
         for line in lines:
             match = re.match(self.NUMBERED_PATTERN, line, re.IGNORECASE)
@@ -188,12 +245,14 @@ class StepExtractor:
                 number = int(match.group(1))
                 content = match.group(2).strip()
                 if content:
-                    steps.append(ImplementationStep(
-                        number=number,
-                        content=content,
-                        original_text=line.strip(),
-                        format_detected=StepFormat.NUMBERED,
-                    ))
+                    steps.append(
+                        ImplementationStep(
+                            number=number,
+                            content=content,
+                            original_text=line.strip(),
+                            format_detected=StepFormat.NUMBERED,
+                        )
+                    )
 
         # Sort by number and renumber sequentially
         if steps:
@@ -206,7 +265,7 @@ class StepExtractor:
     def _extract_bullet_steps(self, response: str) -> List[ImplementationStep]:
         """Extract bullet steps (-, *, •)."""
         steps = []
-        lines = response.split('\n')
+        lines = response.split("\n")
         step_num = 0
 
         for line in lines:
@@ -216,12 +275,14 @@ class StepExtractor:
                     content = match.group(1).strip()
                     if content:
                         step_num += 1
-                        steps.append(ImplementationStep(
-                            number=step_num,
-                            content=content,
-                            original_text=line.strip(),
-                            format_detected=StepFormat.BULLETS,
-                        ))
+                        steps.append(
+                            ImplementationStep(
+                                number=step_num,
+                                content=content,
+                                original_text=line.strip(),
+                                format_detected=StepFormat.BULLETS,
+                            )
+                        )
                     break
 
         return steps
@@ -231,17 +292,21 @@ class StepExtractor:
         steps = []
 
         # Find all step-like patterns
-        for match in re.finditer(self.STEP_KEYWORD_PATTERN, response, re.IGNORECASE | re.MULTILINE):
+        for match in re.finditer(
+            self.STEP_KEYWORD_PATTERN, response, re.IGNORECASE | re.MULTILINE
+        ):
             number = int(match.group(1))
             content = match.group(2).strip()
 
             if content:
-                steps.append(ImplementationStep(
-                    number=number,
-                    content=content,
-                    original_text=match.group(0),
-                    format_detected=StepFormat.PROSE,
-                ))
+                steps.append(
+                    ImplementationStep(
+                        number=number,
+                        content=content,
+                        original_text=match.group(0),
+                        format_detected=StepFormat.PROSE,
+                    )
+                )
 
         # Sort and renumber
         if steps:
@@ -251,14 +316,16 @@ class StepExtractor:
 
         return steps
 
-    def _validate_and_clean_steps(self, steps: List[ImplementationStep]) -> List[ImplementationStep]:
+    def _validate_and_clean_steps(
+        self, steps: List[ImplementationStep]
+    ) -> List[ImplementationStep]:
         """Validate and clean extracted steps."""
         cleaned = []
 
         for step in steps:
             # Clean up whitespace
             step.content = step.content.strip()
-            step.content = re.sub(r'\s+', ' ', step.content)
+            step.content = re.sub(r"\s+", " ", step.content)
 
             # Check if actionable
             step.is_actionable = self._is_actionable(step.content)
@@ -277,14 +344,18 @@ class StepExtractor:
         # Check for actionable verbs in first few words
         for word in words[:5]:
             # Remove punctuation
-            clean_word = word.rstrip('.,!?;:')
+            clean_word = word.rstrip(".,!?;:")
             if clean_word in self.ACTIONABLE_VERBS:
                 return True
 
         # Fallback: check if text is not just generic advice
         generic_phrases = {
-            "note", "remember", "consider", "think about",
-            "be aware of", "bear in mind"
+            "note",
+            "remember",
+            "consider",
+            "think about",
+            "be aware of",
+            "bear in mind",
         }
 
         if any(phrase in text.lower() for phrase in generic_phrases):
@@ -292,7 +363,9 @@ class StepExtractor:
 
         return len(text) > 20  # Non-empty is better than empty
 
-    def _detect_dependencies(self, steps: List[ImplementationStep]) -> List[ImplementationStep]:
+    def _detect_dependencies(
+        self, steps: List[ImplementationStep]
+    ) -> List[ImplementationStep]:
         """Detect step dependencies based on keywords and ordering (AC1)."""
         for i, step in enumerate(steps):
             content_lower = step.content.lower()
@@ -301,7 +374,7 @@ class StepExtractor:
             for keyword in self.DEPENDENCY_KEYWORDS:
                 if keyword in content_lower:
                     # Look for step references like "after step 1"
-                    match = re.search(r'step\s+(\d+)', content_lower)
+                    match = re.search(r"step\s+(\d+)", content_lower)
                     if match:
                         dep_num = int(match.group(1))
                         if dep_num < step.number and dep_num not in step.dependencies:
@@ -312,21 +385,32 @@ class StepExtractor:
             if any(word in content_lower for word in ["then", "next", "after that"]):
                 if i > 0:
                     # Depends on previous step
-                    step.dependencies.append(steps[i-1].number)
+                    step.dependencies.append(steps[i - 1].number)
 
         return steps
 
-    def _estimate_complexity(self, steps: List[ImplementationStep]) -> List[ImplementationStep]:
+    def _estimate_complexity(
+        self, steps: List[ImplementationStep]
+    ) -> List[ImplementationStep]:
         """Estimate complexity of each step."""
         for step in steps:
             content_lower = step.content.lower()
 
             # Complex indicators
-            complex_words = {"refactor", "optimize", "architecture", "design", "algorithm", "complex"}
+            complex_words = {
+                "refactor",
+                "optimize",
+                "architecture",
+                "design",
+                "algorithm",
+                "complex",
+            }
             if any(word in content_lower for word in complex_words):
                 step.complexity = "complex"
             # Simple indicators
-            elif any(word in content_lower for word in ["add", "change", "update", "fix"]):
+            elif any(
+                word in content_lower for word in ["add", "change", "update", "fix"]
+            ):
                 step.complexity = "simple"
             else:
                 step.complexity = "moderate"
@@ -344,11 +428,18 @@ class StepExtractor:
             content_lower = step.content.lower()
 
             # Detect group by keywords
-            if any(word in content_lower for word in ["test", "verify", "check", "validate"]):
+            if any(
+                word in content_lower
+                for word in ["test", "verify", "check", "validate"]
+            ):
                 group_name = "Testing"
-            elif any(word in content_lower for word in ["deploy", "release", "publish"]):
+            elif any(
+                word in content_lower for word in ["deploy", "release", "publish"]
+            ):
                 group_name = "Deployment"
-            elif any(word in content_lower for word in ["document", "comment", "docstring"]):
+            elif any(
+                word in content_lower for word in ["document", "comment", "docstring"]
+            ):
                 group_name = "Documentation"
             else:
                 group_name = current_group
@@ -363,10 +454,12 @@ class StepExtractor:
         result = []
         for group_name in ["Implementation", "Testing", "Documentation", "Deployment"]:
             if group_name in groups:
-                result.append(StepGroup(
-                    name=group_name,
-                    steps=groups[group_name],
-                    description=f"{group_name} phase",
-                ))
+                result.append(
+                    StepGroup(
+                        name=group_name,
+                        steps=groups[group_name],
+                        description=f"{group_name} phase",
+                    )
+                )
 
         return result

@@ -59,14 +59,18 @@ class ErrorClassifier:
         # Check if exception type is in mapping
         for exc_type, category in ErrorClassifier.EXCEPTION_MAPPING.items():
             if isinstance(exception, exc_type):
-                logger.debug(f"Classified {type(exception).__name__} as {category.value}")
+                logger.debug(
+                    f"Classified {type(exception).__name__} as {category.value}"
+                )
                 return category
 
         # Check message patterns
         error_message = str(exception).lower()
         for pattern, category in ErrorClassifier.MESSAGE_PATTERNS.items():
             if pattern in error_message:
-                logger.debug(f"Classified by message pattern '{pattern}' as {category.value}")
+                logger.debug(
+                    f"Classified by message pattern '{pattern}' as {category.value}"
+                )
                 return category
 
         # Check context patterns if provided
@@ -74,11 +78,15 @@ class ErrorClassifier:
             context_lower = context.lower()
             for pattern, category in ErrorClassifier.MESSAGE_PATTERNS.items():
                 if pattern in context_lower:
-                    logger.debug(f"Classified by context pattern '{pattern}' as {category.value}")
+                    logger.debug(
+                        f"Classified by context pattern '{pattern}' as {category.value}"
+                    )
                     return category
 
         # Default to PROJECT_NOT_DETECTED if unable to classify
-        logger.debug(f"Could not classify {type(exception).__name__}, defaulting to PROJECT_NOT_DETECTED")
+        logger.debug(
+            f"Could not classify {type(exception).__name__}, defaulting to PROJECT_NOT_DETECTED"
+        )
         return ErrorCategory.PROJECT_NOT_DETECTED
 
     @staticmethod
@@ -94,7 +102,9 @@ class ErrorClassifier:
             or None if detection was successful
         """
         if confidence < 0.6:
-            logger.debug(f"Classified low confidence ({confidence:.1%}) as DETECTION_FAILED")
+            logger.debug(
+                f"Classified low confidence ({confidence:.1%}) as DETECTION_FAILED"
+            )
             return ErrorCategory.DETECTION_FAILED
         return None
 

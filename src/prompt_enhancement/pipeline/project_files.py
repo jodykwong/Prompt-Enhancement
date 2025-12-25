@@ -35,6 +35,7 @@ from .tech_stack import ProjectLanguage
 # Data Structures (Task 2.2.1)
 # ============================================================================
 
+
 @dataclass
 class DependencyInfo:
     """Information about a single dependency."""
@@ -82,12 +83,15 @@ class ProjectIndicatorResult:
     files_found: List[str]
     lock_files_present: Set[str]
     confidence: float
-    lock_file_sync_status: Optional[str] = None  # AC3: "in-sync", "out-of-sync", "unknown"
+    lock_file_sync_status: Optional[str] = (
+        None  # AC3: "in-sync", "out-of-sync", "unknown"
+    )
 
 
 # ============================================================================
 # ProjectIndicatorFilesDetector Class
 # ============================================================================
+
 
 class ProjectIndicatorFilesDetector:
     """
@@ -104,46 +108,46 @@ class ProjectIndicatorFilesDetector:
 
     # Language-specific configuration file definitions
     PYTHON_CONFIGS = {
-        'pyproject.toml': {'priority': 10, 'type': 'toml'},
-        'setup.cfg': {'priority': 8, 'type': 'ini'},
-        'setup.py': {'priority': 7, 'type': 'python'},
-        'requirements.txt': {'priority': 6, 'type': 'text'},
-        'Pipfile': {'priority': 5, 'type': 'ini'},
+        "pyproject.toml": {"priority": 10, "type": "toml"},
+        "setup.cfg": {"priority": 8, "type": "ini"},
+        "setup.py": {"priority": 7, "type": "python"},
+        "requirements.txt": {"priority": 6, "type": "text"},
+        "Pipfile": {"priority": 5, "type": "ini"},
     }
 
-    PYTHON_LOCK_FILES = ['poetry.lock', 'Pipfile.lock']
+    PYTHON_LOCK_FILES = ["poetry.lock", "Pipfile.lock"]
 
     NODE_CONFIGS = {
-        'package.json': {'priority': 10, 'type': 'json'},
+        "package.json": {"priority": 10, "type": "json"},
     }
 
-    NODE_LOCK_FILES = ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml']
+    NODE_LOCK_FILES = ["package-lock.json", "yarn.lock", "pnpm-lock.yaml"]
 
     GO_CONFIGS = {
-        'go.mod': {'priority': 10, 'type': 'text'},
+        "go.mod": {"priority": 10, "type": "text"},
     }
 
-    GO_LOCK_FILES = ['go.sum']
+    GO_LOCK_FILES = ["go.sum"]
 
     RUST_CONFIGS = {
-        'Cargo.toml': {'priority': 10, 'type': 'toml'},
+        "Cargo.toml": {"priority": 10, "type": "toml"},
     }
 
-    RUST_LOCK_FILES = ['Cargo.lock']
+    RUST_LOCK_FILES = ["Cargo.lock"]
 
     JAVA_CONFIGS = {
-        'pom.xml': {'priority': 10, 'type': 'xml'},
-        'build.gradle': {'priority': 10, 'type': 'gradle'},
+        "pom.xml": {"priority": 10, "type": "xml"},
+        "build.gradle": {"priority": 10, "type": "gradle"},
     }
 
     JAVA_LOCK_FILES = []
 
     CSHARP_CONFIGS = {
-        '.csproj': {'priority': 10, 'type': 'xml'},
-        '.sln': {'priority': 8, 'type': 'text'},
+        ".csproj": {"priority": 10, "type": "xml"},
+        ".sln": {"priority": 8, "type": "text"},
     }
 
-    CSHARP_LOCK_FILES = ['packages.config']
+    CSHARP_LOCK_FILES = ["packages.config"]
 
     # Timeout for detection (2-second budget from Story 1.4)
     DETECTION_TIMEOUT_SECONDS = 2.0
@@ -181,7 +185,9 @@ class ProjectIndicatorFilesDetector:
             files_found, lock_files = self._find_config_files()
 
             if not files_found:
-                logger.debug(f"No config files found for {self.detected_language.value}")
+                logger.debug(
+                    f"No config files found for {self.detected_language.value}"
+                )
                 return None
 
             # Parse the first found config file (by priority)
@@ -191,7 +197,9 @@ class ProjectIndicatorFilesDetector:
                 return None
 
             # Add lock file information
-            metadata.package_manager = self._identify_package_manager(files_found, lock_files)
+            metadata.package_manager = self._identify_package_manager(
+                files_found, lock_files
+            )
 
             # FIX #1 (CRITICAL): AC4 - Infer directory structure
             self._infer_directory_structure(metadata)
@@ -209,7 +217,7 @@ class ProjectIndicatorFilesDetector:
                 files_found=all_files_found,
                 lock_files_present=lock_files,
                 confidence=confidence,
-                lock_file_sync_status=lock_sync_status
+                lock_file_sync_status=lock_sync_status,
             )
 
         except Exception as e:
@@ -253,7 +261,7 @@ class ProjectIndicatorFilesDetector:
 
                 # Check for .csproj and .sln files (C#)
                 if self.detected_language == ProjectLanguage.CSHARP:
-                    if item.name.endswith('.csproj') or item.name.endswith('.sln'):
+                    if item.name.endswith(".csproj") or item.name.endswith(".sln"):
                         config_files.append(item.name)
 
         except PermissionError as e:
@@ -263,7 +271,9 @@ class ProjectIndicatorFilesDetector:
 
         return config_files, lock_files
 
-    def _read_file_safe(self, filename: str, lines: int = 200, encoding: str = 'utf-8') -> Optional[str]:
+    def _read_file_safe(
+        self, filename: str, lines: int = 200, encoding: str = "utf-8"
+    ) -> Optional[str]:
         """
         Read file safely with encoding fallback.
 
@@ -278,8 +288,8 @@ class ProjectIndicatorFilesDetector:
         filepath = self.project_root / filename
 
         try:
-            with open(filepath, 'r', encoding=encoding) as f:
-                content = ''
+            with open(filepath, "r", encoding=encoding) as f:
+                content = ""
                 for i, line in enumerate(f):
                     if i >= lines:
                         break
@@ -289,8 +299,8 @@ class ProjectIndicatorFilesDetector:
         except UnicodeDecodeError:
             # Fallback to latin-1
             try:
-                with open(filepath, 'r', encoding='latin-1') as f:
-                    content = ''
+                with open(filepath, "r", encoding="latin-1") as f:
+                    content = ""
                     for i, line in enumerate(f):
                         if i >= lines:
                             break
@@ -333,14 +343,16 @@ class ProjectIndicatorFilesDetector:
 
         return None
 
-    def _parse_python_config(self, config_files: List[str]) -> Optional[ProjectMetadata]:
+    def _parse_python_config(
+        self, config_files: List[str]
+    ) -> Optional[ProjectMetadata]:
         """Parse Python configuration files."""
         metadata = None
 
         # Try pyproject.toml first (modern standard)
-        if 'pyproject.toml' in config_files:
+        if "pyproject.toml" in config_files:
             try:
-                content = self._read_file_safe('pyproject.toml')
+                content = self._read_file_safe("pyproject.toml")
                 if content:
                     metadata = self._extract_pyproject_toml(content)
                     if metadata:
@@ -349,9 +361,9 @@ class ProjectIndicatorFilesDetector:
                 logger.debug(f"Error parsing pyproject.toml: {e}")
 
         # Try setup.py
-        if 'setup.py' in config_files:
+        if "setup.py" in config_files:
             try:
-                content = self._read_file_safe('setup.py')
+                content = self._read_file_safe("setup.py")
                 if content:
                     metadata = self._extract_setup_py(content)
                     if metadata:
@@ -360,9 +372,9 @@ class ProjectIndicatorFilesDetector:
                 logger.debug(f"Error parsing setup.py: {e}")
 
         # Try requirements.txt
-        if 'requirements.txt' in config_files:
+        if "requirements.txt" in config_files:
             try:
-                content = self._read_file_safe('requirements.txt')
+                content = self._read_file_safe("requirements.txt")
                 if content:
                     metadata = self._extract_requirements_txt(content)
                     if metadata:
@@ -379,22 +391,22 @@ class ProjectIndicatorFilesDetector:
             if tomllib:
                 try:
                     data = tomllib.loads(content)
-                    project = data.get('project', {})
+                    project = data.get("project", {})
 
-                    name = project.get('name')
-                    version = project.get('version')
-                    python_version = project.get('requires-python')
+                    name = project.get("name")
+                    version = project.get("version")
+                    python_version = project.get("requires-python")
 
                     # Extract dependencies (FIX #5: Proper dependency parsing)
                     dependencies = []
-                    for dep_spec in project.get('dependencies', []):
+                    for dep_spec in project.get("dependencies", []):
                         dep_info = self._parse_python_dependency(dep_spec)
                         if dep_info:
                             dependencies.append(dep_info)
 
                     # Extract dev dependencies
                     dev_dependencies = []
-                    optional_deps = project.get('optional-dependencies', {})
+                    optional_deps = project.get("optional-dependencies", {})
                     for group_name, deps in optional_deps.items():
                         for dep_spec in deps:
                             dep_info = self._parse_python_dependency(dep_spec)
@@ -409,15 +421,19 @@ class ProjectIndicatorFilesDetector:
                         dependencies=dependencies,
                         dev_dependencies=dev_dependencies,
                         target_version=python_version,
-                        package_manager="pip"
+                        package_manager="pip",
                     )
                 except Exception as toml_error:
-                    logger.debug(f"TOML parsing failed: {toml_error}, falling back to regex")
+                    logger.debug(
+                        f"TOML parsing failed: {toml_error}, falling back to regex"
+                    )
 
             # Fallback to regex parsing if tomllib not available
             name_match = re.search(r'name\s*=\s*["\']([^"\']+)["\']', content)
             version_match = re.search(r'version\s*=\s*["\']([^"\']+)["\']', content)
-            python_match = re.search(r'requires-python\s*=\s*["\']([^"\']+)["\']', content)
+            python_match = re.search(
+                r'requires-python\s*=\s*["\']([^"\']+)["\']', content
+            )
 
             name = name_match.group(1) if name_match else None
             version = version_match.group(1) if version_match else None
@@ -425,7 +441,7 @@ class ProjectIndicatorFilesDetector:
 
             # Extract dependencies
             dependencies = []
-            deps_match = re.search(r'dependencies\s*=\s*\[(.*?)\]', content, re.DOTALL)
+            deps_match = re.search(r"dependencies\s*=\s*\[(.*?)\]", content, re.DOTALL)
             if deps_match:
                 deps_text = deps_match.group(1)
                 for dep in re.findall(r'["\']([^"\']+)["\']', deps_text):
@@ -440,7 +456,7 @@ class ProjectIndicatorFilesDetector:
                 dependencies=dependencies,
                 dev_dependencies=[],
                 target_version=python_version,
-                package_manager="pip"
+                package_manager="pip",
             )
         except Exception as e:
             logger.debug(f"Error extracting from pyproject.toml: {e}")
@@ -462,16 +478,13 @@ class ProjectIndicatorFilesDetector:
         try:
             # Match package name and version constraint
             # Pattern: package_name (comparison_operator version)?
-            match = re.match(r'^([a-zA-Z0-9_\-\.]+)\s*([><=!~]+.*)?$', dep_spec.strip())
+            match = re.match(r"^([a-zA-Z0-9_\-\.]+)\s*([><=!~]+.*)?$", dep_spec.strip())
             if match:
                 dep_name = match.group(1)
                 dep_version = match.group(2).strip() if match.group(2) else None
 
                 return DependencyInfo(
-                    name=dep_name,
-                    version=dep_version,
-                    scope="production",
-                    features=[]
+                    name=dep_name, version=dep_version, scope="production", features=[]
                 )
             return None
         except Exception as e:
@@ -494,7 +507,7 @@ class ProjectIndicatorFilesDetector:
                 dependencies=[],
                 dev_dependencies=[],
                 target_version=None,
-                package_manager="pip"
+                package_manager="pip",
             )
         except Exception as e:
             logger.debug(f"Error extracting from setup.py: {e}")
@@ -504,13 +517,18 @@ class ProjectIndicatorFilesDetector:
         """Extract dependencies from requirements.txt (FIX #5: Use proper parser)."""
         try:
             dependencies = []
-            for line in content.split('\n'):
+            for line in content.split("\n"):
                 line = line.strip()
                 # Skip empty lines and comments
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue
                 # Skip -r, -e, git+, and local paths for now
-                if line.startswith('-r') or line.startswith('-e') or line.startswith('git+') or line.startswith('./'):
+                if (
+                    line.startswith("-r")
+                    or line.startswith("-e")
+                    or line.startswith("git+")
+                    or line.startswith("./")
+                ):
                     continue
 
                 # Use the proper Python dependency parser
@@ -525,7 +543,7 @@ class ProjectIndicatorFilesDetector:
                 dependencies=dependencies,
                 dev_dependencies=[],
                 target_version=None,
-                package_manager="pip"
+                package_manager="pip",
             )
         except Exception as e:
             logger.debug(f"Error extracting from requirements.txt: {e}")
@@ -533,49 +551,53 @@ class ProjectIndicatorFilesDetector:
 
     def _parse_node_config(self, config_files: List[str]) -> Optional[ProjectMetadata]:
         """Parse Node.js configuration files."""
-        if 'package.json' not in config_files:
+        if "package.json" not in config_files:
             return None
 
         try:
-            content = self._read_file_safe('package.json')
+            content = self._read_file_safe("package.json")
             if not content:
                 return None
 
             data = json.loads(content)
 
             # Extract metadata
-            name = data.get('name')
-            version = data.get('version')
+            name = data.get("name")
+            version = data.get("version")
 
             # Extract Node version
             node_version = None
-            if 'engines' in data and 'node' in data['engines']:
-                node_ver_str = data['engines']['node']
+            if "engines" in data and "node" in data["engines"]:
+                node_ver_str = data["engines"]["node"]
                 # Match semantic version like 16, 16.0, 16.0.0
-                match = re.search(r'(\d+(?:\.\d+)*)', node_ver_str)
+                match = re.search(r"(\d+(?:\.\d+)*)", node_ver_str)
                 if match:
                     node_version = match.group(1)
 
             # Extract dependencies
             dependencies = []
-            if 'dependencies' in data:
-                for dep_name, dep_version in data['dependencies'].items():
-                    dependencies.append(DependencyInfo(
-                        name=dep_name,
-                        version=dep_version,
-                        scope="production",
-                        features=[]
-                    ))
+            if "dependencies" in data:
+                for dep_name, dep_version in data["dependencies"].items():
+                    dependencies.append(
+                        DependencyInfo(
+                            name=dep_name,
+                            version=dep_version,
+                            scope="production",
+                            features=[],
+                        )
+                    )
 
             dev_dependencies = []
-            if 'devDependencies' in data:
-                for dep_name, dep_version in data['devDependencies'].items():
-                    dev_dependencies.append(DependencyInfo(
-                        name=dep_name,
-                        version=dep_version,
-                        scope="development",
-                        features=[]
-                    ))
+            if "devDependencies" in data:
+                for dep_name, dep_version in data["devDependencies"].items():
+                    dev_dependencies.append(
+                        DependencyInfo(
+                            name=dep_name,
+                            version=dep_version,
+                            scope="development",
+                            features=[],
+                        )
+                    )
 
             return ProjectMetadata(
                 name=name,
@@ -584,7 +606,7 @@ class ProjectIndicatorFilesDetector:
                 dependencies=dependencies,
                 dev_dependencies=dev_dependencies,
                 target_version=node_version,
-                package_manager="npm"
+                package_manager="npm",
             )
 
         except json.JSONDecodeError as e:
@@ -596,15 +618,15 @@ class ProjectIndicatorFilesDetector:
 
     def _parse_go_config(self, config_files: List[str]) -> Optional[ProjectMetadata]:
         """Parse Go configuration files (FIX #2: Extract dependencies)."""
-        if 'go.mod' not in config_files:
+        if "go.mod" not in config_files:
             return None
 
         try:
-            content = self._read_file_safe('go.mod')
+            content = self._read_file_safe("go.mod")
             if not content:
                 return None
 
-            lines = content.split('\n')
+            lines = content.split("\n")
             go_version = None
             module_name = None
             dependencies = []
@@ -614,39 +636,43 @@ class ProjectIndicatorFilesDetector:
                 line = line.strip()
 
                 # Extract Go version
-                if line.startswith('go '):
-                    go_version = line.replace('go ', '').strip()
+                if line.startswith("go "):
+                    go_version = line.replace("go ", "").strip()
 
                 # Extract module name
-                if line.startswith('module '):
-                    module_name = line.replace('module ', '').strip()
+                if line.startswith("module "):
+                    module_name = line.replace("module ", "").strip()
 
                 # Handle require block
-                if line.startswith('require ('):
+                if line.startswith("require ("):
                     in_require_block = True
                     continue
-                elif line == ')' and in_require_block:
+                elif line == ")" and in_require_block:
                     in_require_block = False
                     continue
 
                 # Parse dependency
-                if in_require_block or line.startswith('require '):
+                if in_require_block or line.startswith("require "):
                     # Remove 'require ' prefix if single-line
-                    if line.startswith('require '):
-                        line = line.replace('require ', '', 1).strip()
+                    if line.startswith("require "):
+                        line = line.replace("require ", "", 1).strip()
 
                     # Parse: github.com/some/lib v1.2.3 or github.com/some/lib v1.2.3 // indirect
-                    match = re.match(r'([^\s]+)\s+([^\s]+)', line)
+                    match = re.match(r"([^\s]+)\s+([^\s]+)", line)
                     if match:
                         dep_name = match.group(1)
                         dep_version = match.group(2)
-                        scope = "production" if "// indirect" not in line else "transitive"
-                        dependencies.append(DependencyInfo(
-                            name=dep_name,
-                            version=dep_version,
-                            scope=scope,
-                            features=[]
-                        ))
+                        scope = (
+                            "production" if "// indirect" not in line else "transitive"
+                        )
+                        dependencies.append(
+                            DependencyInfo(
+                                name=dep_name,
+                                version=dep_version,
+                                scope=scope,
+                                features=[],
+                            )
+                        )
 
             return ProjectMetadata(
                 name=module_name,
@@ -655,7 +681,7 @@ class ProjectIndicatorFilesDetector:
                 dependencies=dependencies,
                 dev_dependencies=[],
                 target_version=go_version,
-                package_manager="go"
+                package_manager="go",
             )
 
         except Exception as e:
@@ -664,11 +690,11 @@ class ProjectIndicatorFilesDetector:
 
     def _parse_rust_config(self, config_files: List[str]) -> Optional[ProjectMetadata]:
         """Parse Rust configuration files (FIX #2: Extract dependencies)."""
-        if 'Cargo.toml' not in config_files:
+        if "Cargo.toml" not in config_files:
             return None
 
         try:
-            content = self._read_file_safe('Cargo.toml')
+            content = self._read_file_safe("Cargo.toml")
             if not content:
                 return None
 
@@ -676,44 +702,50 @@ class ProjectIndicatorFilesDetector:
             if tomllib:
                 try:
                     data = tomllib.loads(content)
-                    package = data.get('package', {})
+                    package = data.get("package", {})
 
-                    name = package.get('name')
-                    version = package.get('version')
-                    edition = package.get('edition')
+                    name = package.get("name")
+                    version = package.get("version")
+                    edition = package.get("edition")
 
                     # Extract dependencies
                     dependencies = []
-                    for dep_name, dep_spec in data.get('dependencies', {}).items():
+                    for dep_name, dep_spec in data.get("dependencies", {}).items():
                         if isinstance(dep_spec, str):
                             # Simple version: tokio = "1.35"
-                            dependencies.append(DependencyInfo(
-                                name=dep_name,
-                                version=dep_spec,
-                                scope="production",
-                                features=[]
-                            ))
+                            dependencies.append(
+                                DependencyInfo(
+                                    name=dep_name,
+                                    version=dep_spec,
+                                    scope="production",
+                                    features=[],
+                                )
+                            )
                         elif isinstance(dep_spec, dict):
                             # Complex spec: serde = { version = "1.0", features = ["derive"] }
-                            version = dep_spec.get('version')
-                            features = dep_spec.get('features', [])
-                            dependencies.append(DependencyInfo(
-                                name=dep_name,
-                                version=version,
-                                scope="production",
-                                features=features
-                            ))
+                            version = dep_spec.get("version")
+                            features = dep_spec.get("features", [])
+                            dependencies.append(
+                                DependencyInfo(
+                                    name=dep_name,
+                                    version=version,
+                                    scope="production",
+                                    features=features,
+                                )
+                            )
 
                     # Extract dev dependencies
                     dev_dependencies = []
-                    for dep_name, dep_spec in data.get('dev-dependencies', {}).items():
+                    for dep_name, dep_spec in data.get("dev-dependencies", {}).items():
                         if isinstance(dep_spec, str):
-                            dev_dependencies.append(DependencyInfo(
-                                name=dep_name,
-                                version=dep_spec,
-                                scope="development",
-                                features=[]
-                            ))
+                            dev_dependencies.append(
+                                DependencyInfo(
+                                    name=dep_name,
+                                    version=dep_spec,
+                                    scope="development",
+                                    features=[],
+                                )
+                            )
 
                     return ProjectMetadata(
                         name=name,
@@ -722,10 +754,12 @@ class ProjectIndicatorFilesDetector:
                         dependencies=dependencies,
                         dev_dependencies=dev_dependencies,
                         target_version=edition,
-                        package_manager="cargo"
+                        package_manager="cargo",
                     )
                 except Exception as toml_error:
-                    logger.debug(f"Cargo.toml TOML parsing failed: {toml_error}, falling back to regex")
+                    logger.debug(
+                        f"Cargo.toml TOML parsing failed: {toml_error}, falling back to regex"
+                    )
 
             # Fallback to regex
             name_match = re.search(r'name\s*=\s*["\']([^"\']+)["\']', content)
@@ -743,7 +777,7 @@ class ProjectIndicatorFilesDetector:
                 dependencies=[],
                 dev_dependencies=[],
                 target_version=edition,
-                package_manager="cargo"
+                package_manager="cargo",
             )
 
         except Exception as e:
@@ -753,9 +787,9 @@ class ProjectIndicatorFilesDetector:
     def _parse_java_config(self, config_files: List[str]) -> Optional[ProjectMetadata]:
         """Parse Java configuration files (FIX #2: Extract dependencies)."""
         # Try pom.xml first
-        if 'pom.xml' in config_files:
+        if "pom.xml" in config_files:
             try:
-                content = self._read_file_safe('pom.xml')
+                content = self._read_file_safe("pom.xml")
                 if content:
                     java_version = self._extract_java_version_from_pom(content)
                     dependencies = self._extract_maven_dependencies(content)
@@ -766,15 +800,15 @@ class ProjectIndicatorFilesDetector:
                         dependencies=dependencies,
                         dev_dependencies=[],
                         target_version=java_version,
-                        package_manager="maven"
+                        package_manager="maven",
                     )
             except Exception as e:
                 logger.debug(f"Error parsing pom.xml: {e}")
 
         # Try build.gradle
-        if 'build.gradle' in config_files:
+        if "build.gradle" in config_files:
             try:
-                content = self._read_file_safe('build.gradle')
+                content = self._read_file_safe("build.gradle")
                 if content:
                     java_version = self._extract_java_version_from_gradle(content)
                     dependencies = self._extract_gradle_dependencies(content)
@@ -785,7 +819,7 @@ class ProjectIndicatorFilesDetector:
                         dependencies=dependencies,
                         dev_dependencies=[],
                         target_version=java_version,
-                        package_manager="gradle"
+                        package_manager="gradle",
                     )
             except Exception as e:
                 logger.debug(f"Error parsing build.gradle: {e}")
@@ -797,7 +831,7 @@ class ProjectIndicatorFilesDetector:
         dependencies = []
         try:
             # Extract all <dependency> blocks
-            dep_pattern = r'<dependency>\s*<groupId>([^<]+)</groupId>\s*<artifactId>([^<]+)</artifactId>\s*<version>([^<]+)</version>(?:\s*<scope>([^<]+)</scope>)?'
+            dep_pattern = r"<dependency>\s*<groupId>([^<]+)</groupId>\s*<artifactId>([^<]+)</artifactId>\s*<version>([^<]+)</version>(?:\s*<scope>([^<]+)</scope>)?"
             for match in re.finditer(dep_pattern, content, re.DOTALL):
                 group_id = match.group(1).strip()
                 artifact_id = match.group(2).strip()
@@ -807,12 +841,11 @@ class ProjectIndicatorFilesDetector:
                 dep_name = f"{group_id}:{artifact_id}"
                 dep_scope = "development" if scope == "test" else "production"
 
-                dependencies.append(DependencyInfo(
-                    name=dep_name,
-                    version=version,
-                    scope=dep_scope,
-                    features=[]
-                ))
+                dependencies.append(
+                    DependencyInfo(
+                        name=dep_name, version=version, scope=dep_scope, features=[]
+                    )
+                )
         except Exception as e:
             logger.debug(f"Error extracting Maven dependencies: {e}")
         return dependencies
@@ -828,18 +861,22 @@ class ProjectIndicatorFilesDetector:
                 dep_spec = match.group(2)
 
                 # Parse group:artifact:version
-                parts = dep_spec.split(':')
+                parts = dep_spec.split(":")
                 if len(parts) >= 2:
                     dep_name = f"{parts[0]}:{parts[1]}"
                     dep_version = parts[2] if len(parts) >= 3 else None
-                    dep_scope = "development" if "test" in config.lower() else "production"
+                    dep_scope = (
+                        "development" if "test" in config.lower() else "production"
+                    )
 
-                    dependencies.append(DependencyInfo(
-                        name=dep_name,
-                        version=dep_version,
-                        scope=dep_scope,
-                        features=[]
-                    ))
+                    dependencies.append(
+                        DependencyInfo(
+                            name=dep_name,
+                            version=dep_version,
+                            scope=dep_scope,
+                            features=[],
+                        )
+                    )
         except Exception as e:
             logger.debug(f"Error extracting Gradle dependencies: {e}")
         return dependencies
@@ -847,18 +884,22 @@ class ProjectIndicatorFilesDetector:
     def _extract_java_version_from_pom(self, content: str) -> Optional[str]:
         """Extract Java version from pom.xml."""
         # Try maven.compiler.source first (more common in properties)
-        match = re.search(r'<maven\.compiler\.source>(\d+)</maven\.compiler\.source>', content)
+        match = re.search(
+            r"<maven\.compiler\.source>(\d+)</maven\.compiler\.source>", content
+        )
         if match:
             return match.group(1)
         # Try maven.compiler.target
-        match = re.search(r'<maven\.compiler\.target>(\d+)</maven\.compiler\.target>', content)
+        match = re.search(
+            r"<maven\.compiler\.target>(\d+)</maven\.compiler\.target>", content
+        )
         if match:
             return match.group(1)
         # Try direct source/target tags
-        match = re.search(r'<source>(\d+)</source>', content)
+        match = re.search(r"<source>(\d+)</source>", content)
         if match:
             return match.group(1)
-        match = re.search(r'<target>(\d+)</target>', content)
+        match = re.search(r"<target>(\d+)</target>", content)
         if match:
             return match.group(1)
         return None
@@ -870,10 +911,12 @@ class ProjectIndicatorFilesDetector:
             return match.group(1)
         return None
 
-    def _parse_csharp_config(self, config_files: List[str]) -> Optional[ProjectMetadata]:
+    def _parse_csharp_config(
+        self, config_files: List[str]
+    ) -> Optional[ProjectMetadata]:
         """Parse C# configuration files (FIX #2: Extract dependencies)."""
         # Find .csproj file
-        csproj_file = next((f for f in config_files if f.endswith('.csproj')), None)
+        csproj_file = next((f for f in config_files if f.endswith(".csproj")), None)
         if not csproj_file:
             return None
 
@@ -882,7 +925,9 @@ class ProjectIndicatorFilesDetector:
             if not content:
                 return None
 
-            target_match = re.search(r'<TargetFramework>([^<]+)</TargetFramework>', content)
+            target_match = re.search(
+                r"<TargetFramework>([^<]+)</TargetFramework>", content
+            )
             target_version = target_match.group(1) if target_match else None
 
             # Extract dependencies from PackageReference tags
@@ -891,12 +936,14 @@ class ProjectIndicatorFilesDetector:
             for match in re.finditer(dep_pattern, content):
                 dep_name = match.group(1)
                 dep_version = match.group(2)
-                dependencies.append(DependencyInfo(
-                    name=dep_name,
-                    version=dep_version,
-                    scope="production",
-                    features=[]
-                ))
+                dependencies.append(
+                    DependencyInfo(
+                        name=dep_name,
+                        version=dep_version,
+                        scope="production",
+                        features=[],
+                    )
+                )
 
             return ProjectMetadata(
                 name=None,
@@ -905,7 +952,7 @@ class ProjectIndicatorFilesDetector:
                 dependencies=dependencies,
                 dev_dependencies=[],
                 target_version=target_version,
-                package_manager="nuget"
+                package_manager="nuget",
             )
 
         except Exception as e:
@@ -948,35 +995,41 @@ class ProjectIndicatorFilesDetector:
             return self.CSHARP_LOCK_FILES
         return []
 
-    def _identify_package_manager(self, config_files: List[str], lock_files: Set[str]) -> Optional[str]:
+    def _identify_package_manager(
+        self, config_files: List[str], lock_files: Set[str]
+    ) -> Optional[str]:
         """Identify package manager from files present."""
         if self.detected_language == ProjectLanguage.PYTHON:
-            if 'poetry.lock' in lock_files:
-                return 'poetry'
-            elif 'Pipfile.lock' in lock_files:
-                return 'pipenv'
-            return 'pip'
+            if "poetry.lock" in lock_files:
+                return "poetry"
+            elif "Pipfile.lock" in lock_files:
+                return "pipenv"
+            return "pip"
         elif self.detected_language == ProjectLanguage.NODEJS:
-            if 'yarn.lock' in lock_files:
-                return 'yarn'
-            elif 'pnpm-lock.yaml' in lock_files:
-                return 'pnpm'
-            return 'npm'
+            if "yarn.lock" in lock_files:
+                return "yarn"
+            elif "pnpm-lock.yaml" in lock_files:
+                return "pnpm"
+            return "npm"
         elif self.detected_language == ProjectLanguage.GO:
-            return 'go'
+            return "go"
         elif self.detected_language == ProjectLanguage.RUST:
-            return 'cargo'
+            return "cargo"
         elif self.detected_language == ProjectLanguage.JAVA:
-            if 'pom.xml' in config_files:
-                return 'maven'
-            elif 'build.gradle' in config_files:
-                return 'gradle'
+            if "pom.xml" in config_files:
+                return "maven"
+            elif "build.gradle" in config_files:
+                return "gradle"
         elif self.detected_language == ProjectLanguage.CSHARP:
-            return 'nuget'
+            return "nuget"
         return None
 
-    def _calculate_confidence(self, config_files: List[str], lock_files: Set[str],
-                            metadata: Optional[ProjectMetadata]) -> float:
+    def _calculate_confidence(
+        self,
+        config_files: List[str],
+        lock_files: Set[str],
+        metadata: Optional[ProjectMetadata],
+    ) -> float:
         """Calculate confidence score."""
         if not config_files:
             return 0.0
@@ -1020,10 +1073,29 @@ class ProjectIndicatorFilesDetector:
             metadata: ProjectMetadata to populate with directory information
         """
         # Common directory patterns by category
-        SOURCE_PATTERNS = {'src', 'lib', 'main', 'app', 'source', 'pkg', 'internal'}
-        TEST_PATTERNS = {'tests', 'test', '__tests__', 'spec', 'specs', 'testing', 'test-unit', 'test-integration'}
-        BUILD_PATTERNS = {'dist', 'build', 'target', 'out', 'bin', 'obj', 'release', 'debug', 'output'}
-        CONFIG_PATTERNS = {'config', 'etc', 'conf', 'settings', '.config'}
+        SOURCE_PATTERNS = {"src", "lib", "main", "app", "source", "pkg", "internal"}
+        TEST_PATTERNS = {
+            "tests",
+            "test",
+            "__tests__",
+            "spec",
+            "specs",
+            "testing",
+            "test-unit",
+            "test-integration",
+        }
+        BUILD_PATTERNS = {
+            "dist",
+            "build",
+            "target",
+            "out",
+            "bin",
+            "obj",
+            "release",
+            "debug",
+            "output",
+        }
+        CONFIG_PATTERNS = {"config", "etc", "conf", "settings", ".config"}
 
         try:
             if not self.project_root.exists():
@@ -1048,7 +1120,9 @@ class ProjectIndicatorFilesDetector:
         except Exception as e:
             logger.debug(f"Error inferring directory structure: {e}")
 
-    def _check_lock_file_sync(self, config_files: List[str], lock_files: Set[str]) -> str:
+    def _check_lock_file_sync(
+        self, config_files: List[str], lock_files: Set[str]
+    ) -> str:
         """
         Check if lock files are in sync with config files (FIX #3 HIGH: AC3).
 

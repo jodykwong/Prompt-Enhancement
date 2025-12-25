@@ -42,7 +42,9 @@ class SensitiveDataValidator:
             for name, pattern in self.SENSITIVE_PATTERNS.items()
         }
 
-    def validate_context_dict(self, context_dict: Dict[str, Any]) -> tuple[bool, List[str]]:
+    def validate_context_dict(
+        self, context_dict: Dict[str, Any]
+    ) -> tuple[bool, List[str]]:
         """
         Validate that context dictionary contains no sensitive data.
 
@@ -61,12 +63,22 @@ class SensitiveDataValidator:
         for pattern_name, pattern in self.compiled_patterns.items():
             matches = pattern.findall(context_str)
             if matches:
-                violations.append(f"Found {pattern_name} pattern: {len(matches)} matches")
-                logger.debug(f"Sensitive data detected: {pattern_name} ({len(matches)} matches)")
+                violations.append(
+                    f"Found {pattern_name} pattern: {len(matches)} matches"
+                )
+                logger.debug(
+                    f"Sensitive data detected: {pattern_name} ({len(matches)} matches)"
+                )
 
         # Check specific fields that should never contain sensitive data
-        violations.extend(self._validate_field("user_overrides", context_dict.get("user_overrides", {})))
-        violations.extend(self._validate_field("project_name", context_dict.get("project_name", "")))
+        violations.extend(
+            self._validate_field(
+                "user_overrides", context_dict.get("user_overrides", {})
+            )
+        )
+        violations.extend(
+            self._validate_field("project_name", context_dict.get("project_name", ""))
+        )
 
         return len(violations) == 0, violations
 
@@ -136,6 +148,7 @@ class SensitiveDataValidator:
             List of found sensitive env vars (non-empty means they're set)
         """
         import os
+
         sensitive_env_vars = [
             "OPENAI_API_KEY",
             "DEEPSEEK_API_KEY",

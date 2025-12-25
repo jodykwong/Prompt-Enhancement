@@ -22,13 +22,35 @@ class ResponseValidator:
     MIN_LENGTH = 50  # Minimum characters
     MAX_LENGTH = 2000  # Maximum characters per AC2
     ACTIONABLE_KEYWORDS = [
-        "step", "implement", "add", "create", "modify", "update",
-        "function", "method", "class", "module", "test", "validate",
-        "verify", "check", "follow", "ensure", "include", "use",
-        "define", "write", "generate", "handle", "process", "manage"
+        "step",
+        "implement",
+        "add",
+        "create",
+        "modify",
+        "update",
+        "function",
+        "method",
+        "class",
+        "module",
+        "test",
+        "validate",
+        "verify",
+        "check",
+        "follow",
+        "ensure",
+        "include",
+        "use",
+        "define",
+        "write",
+        "generate",
+        "handle",
+        "process",
+        "manage",
     ]
 
-    def validate_response(self, response: str, original_prompt: str) -> Tuple[bool, List[str]]:
+    def validate_response(
+        self, response: str, original_prompt: str
+    ) -> Tuple[bool, List[str]]:
         """
         Validate LLM response.
 
@@ -50,7 +72,9 @@ class ResponseValidator:
         if len(response) < self.MIN_LENGTH:
             violations.append(f"Response too short (< {self.MIN_LENGTH} chars)")
         if len(response) > self.MAX_LENGTH:
-            violations.append(f"Response exceeds maximum length ({self.MAX_LENGTH} chars)")
+            violations.append(
+                f"Response exceeds maximum length ({self.MAX_LENGTH} chars)"
+            )
 
         # AC2: Check 3 - Contains actionable guidance
         if not self._contains_actionable_guidance(response):
@@ -70,8 +94,7 @@ class ResponseValidator:
         """
         response_lower = response.lower()
         actionable_count = sum(
-            1 for keyword in self.ACTIONABLE_KEYWORDS
-            if keyword in response_lower
+            1 for keyword in self.ACTIONABLE_KEYWORDS if keyword in response_lower
         )
 
         # At least 3 actionable keywords
@@ -86,7 +109,8 @@ class ResponseValidator:
         # Extract significant words from original prompt (3+ chars, excluding common words)
         common_words = {"the", "and", "or", "for", "with", "that", "this", "from"}
         original_words = {
-            word.lower() for word in re.findall(r'\b\w{3,}\b', original)
+            word.lower()
+            for word in re.findall(r"\b\w{3,}\b", original)
             if word.lower() not in common_words
         }
 
@@ -96,10 +120,7 @@ class ResponseValidator:
 
         # Check if response contains at least 30% of original meaningful words
         response_lower = response.lower()
-        matched_words = sum(
-            1 for word in original_words
-            if word in response_lower
-        )
+        matched_words = sum(1 for word in original_words if word in response_lower)
 
         match_ratio = matched_words / len(original_words) if original_words else 0
         return match_ratio >= 0.3
@@ -120,11 +141,11 @@ class ResponseValidator:
         sanitized = response.strip()
 
         # Replace multiple newlines with single
-        sanitized = re.sub(r'\n\n+', '\n\n', sanitized)
+        sanitized = re.sub(r"\n\n+", "\n\n", sanitized)
 
         # Ensure ends with period if not already
-        if sanitized and not sanitized.endswith(('.', '!', '?', ':')):
-            sanitized += '.'
+        if sanitized and not sanitized.endswith((".", "!", "?", ":")):
+            sanitized += "."
 
         return sanitized
 
@@ -146,9 +167,12 @@ class ResponseValidator:
         """
         sections = {
             "full_response": response,
-            "has_implementation_steps": "step" in response.lower() or "implement" in response.lower(),
-            "has_testing_guidance": "test" in response.lower() or "verify" in response.lower(),
-            "has_error_handling": "error" in response.lower() or "handle" in response.lower(),
+            "has_implementation_steps": "step" in response.lower()
+            or "implement" in response.lower(),
+            "has_testing_guidance": "test" in response.lower()
+            or "verify" in response.lower(),
+            "has_error_handling": "error" in response.lower()
+            or "handle" in response.lower(),
             "estimated_complexity": self._estimate_complexity(response),
         }
 
@@ -161,21 +185,25 @@ class ResponseValidator:
         Returns: "simple", "moderate", or "complex"
         """
         response_lower = response.lower()
-        line_count = len(response.split('\n'))
+        line_count = len(response.split("\n"))
 
         complexity_indicators = {
             "simple": ["basic", "simple", "easy", "straightforward"],
-            "complex": ["complex", "advanced", "sophisticated", "intricate", "architecture"]
+            "complex": [
+                "complex",
+                "advanced",
+                "sophisticated",
+                "intricate",
+                "architecture",
+            ],
         }
 
         complex_score = sum(
-            1 for word in complexity_indicators["complex"]
-            if word in response_lower
+            1 for word in complexity_indicators["complex"] if word in response_lower
         )
 
         simple_score = sum(
-            1 for word in complexity_indicators["simple"]
-            if word in response_lower
+            1 for word in complexity_indicators["simple"] if word in response_lower
         )
 
         if complex_score > simple_score:

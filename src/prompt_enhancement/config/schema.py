@@ -54,7 +54,10 @@ class StandardsConfig:
         """
         errors = []
 
-        if self.naming_convention and self.naming_convention not in VALID_NAMING_CONVENTIONS:
+        if (
+            self.naming_convention
+            and self.naming_convention not in VALID_NAMING_CONVENTIONS
+        ):
             errors.append(
                 f"Invalid naming_convention: {self.naming_convention}. "
                 f"Valid options: {', '.join(VALID_NAMING_CONVENTIONS)}"
@@ -75,7 +78,10 @@ class StandardsConfig:
                 f"Valid options: {', '.join(VALID_DOCUMENTATION_STYLES)}"
             )
 
-        if self.code_organization and self.code_organization not in VALID_CODE_ORGANIZATION:
+        if (
+            self.code_organization
+            and self.code_organization not in VALID_CODE_ORGANIZATION
+        ):
             errors.append(
                 f"Invalid code_organization: {self.code_organization}. "
                 f"Valid options: {', '.join(VALID_CODE_ORGANIZATION)}"

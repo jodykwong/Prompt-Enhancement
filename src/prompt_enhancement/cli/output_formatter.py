@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class FormattingError(Exception):
     """Exception raised during output formatting."""
+
     pass
 
 
@@ -53,7 +54,9 @@ class OutputFormatter:
         self.display_only_mode = display_only_mode
         self.terminal_width = terminal_width
 
-        logger.debug(f"OutputFormatter initialized: display_only_mode={display_only_mode}, terminal_width={terminal_width}")
+        logger.debug(
+            f"OutputFormatter initialized: display_only_mode={display_only_mode}, terminal_width={terminal_width}"
+        )
 
     def is_display_only_mode(self) -> bool:
         """Check if Display-Only mode is active."""
@@ -93,7 +96,9 @@ class OutputFormatter:
         else:
             return "⚡ Normal Mode"
 
-    def wrap_text(self, text: str, width: Optional[int] = None, preserve_indentation: bool = False) -> str:
+    def wrap_text(
+        self, text: str, width: Optional[int] = None, preserve_indentation: bool = False
+    ) -> str:
         """
         Wrap text to terminal width while preserving word boundaries.
 
@@ -133,7 +138,9 @@ class OutputFormatter:
 
                     # If indentation is too large, truncate it
                     if leading_spaces >= width:
-                        logger.warning(f"Indentation ({leading_spaces} spaces) exceeds terminal width ({width}). Truncating.")
+                        logger.warning(
+                            f"Indentation ({leading_spaces} spaces) exceeds terminal width ({width}). Truncating."
+                        )
                         indent = " " * (width - 10)  # Leave 10 chars for content
                         available_width = 10
 
@@ -142,7 +149,7 @@ class OutputFormatter:
                         content,
                         width=available_width,
                         break_long_words=True,
-                        break_on_hyphens=False
+                        break_on_hyphens=False,
                     )
 
                     # Re-add indentation to wrapped lines
@@ -152,11 +159,11 @@ class OutputFormatter:
             return "\n".join(wrapped_lines)
         else:
             # Normalize line endings for cross-platform compatibility (MEDIUM-6 fix)
-            text = text.replace('\r\n', '\n')
+            text = text.replace("\r\n", "\n")
 
             # Handle paragraphs (preserve multiple newlines)
             # Use regex to split on 2+ newlines with optional whitespace (MEDIUM-6 fix)
-            paragraphs = re.split(r'\n\s*\n', text)
+            paragraphs = re.split(r"\n\s*\n", text)
             wrapped_paragraphs = []
 
             for paragraph in paragraphs:
@@ -169,7 +176,7 @@ class OutputFormatter:
                     paragraph,
                     width=width,
                     break_long_words=True,
-                    break_on_hyphens=False
+                    break_on_hyphens=False,
                 )
                 wrapped_paragraphs.append(wrapped)
 
@@ -213,7 +220,9 @@ class OutputFormatter:
         if prompt_text is None:
             wrapped_content = "(No prompt provided)"
         elif not isinstance(prompt_text, str):
-            raise FormattingError(f"prompt_text must be str, got {type(prompt_text).__name__}")
+            raise FormattingError(
+                f"prompt_text must be str, got {type(prompt_text).__name__}"
+            )
         elif not prompt_text.strip():
             wrapped_content = "(Empty prompt)"
         else:
@@ -239,7 +248,9 @@ class OutputFormatter:
         if enhanced_text is None:
             wrapped_content = "(No enhanced prompt generated)"
         elif not isinstance(enhanced_text, str):
-            raise FormattingError(f"enhanced_text must be str, got {type(enhanced_text).__name__}")
+            raise FormattingError(
+                f"enhanced_text must be str, got {type(enhanced_text).__name__}"
+            )
         elif not enhanced_text.strip():
             wrapped_content = "(Empty enhanced prompt)"
         else:
@@ -275,7 +286,9 @@ class OutputFormatter:
                 if step is None:
                     step_lines.append(f"{i}. (Empty step)")
                 elif not isinstance(step, str):
-                    raise FormattingError(f"Step {i} must be str, got {type(step).__name__}")
+                    raise FormattingError(
+                        f"Step {i} must be str, got {type(step).__name__}"
+                    )
                 else:
                     step_lines.append(f"{i}. {step}")
             content = "\n".join(step_lines)
@@ -307,7 +320,11 @@ class OutputFormatter:
                 evidence = standard_data.get("evidence", "")
 
                 # Format: name: value (confidence%)
-                confidence_pct = int(confidence * 100) if isinstance(confidence, float) else confidence
+                confidence_pct = (
+                    int(confidence * 100)
+                    if isinstance(confidence, float)
+                    else confidence
+                )
                 line = f"✓ {standard_name}: {value} ({confidence_pct}% confidence)"
 
                 standard_lines.append(line)
@@ -326,7 +343,7 @@ class OutputFormatter:
         original_prompt: str,
         enhanced_prompt: str,
         implementation_steps: List[str],
-        detected_standards: Optional[Dict[str, Any]] = None
+        detected_standards: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Format complete result with all sections (AC1-AC5).
@@ -355,7 +372,11 @@ class OutputFormatter:
         original_section = self.format_original_prompt(original_prompt)
         enhanced_section = self.format_enhanced_prompt(enhanced_prompt)
         steps_section = self.format_implementation_steps(implementation_steps)
-        standards_section = self.format_standards_section(detected_standards) if detected_standards else ""
+        standards_section = (
+            self.format_standards_section(detected_standards)
+            if detected_standards
+            else ""
+        )
 
         # Combine all sections
         sections = [
@@ -375,7 +396,9 @@ class OutputFormatter:
 
         result = "\n".join(sections)
 
-        logger.info(f"Complete result formatted (display_only_mode={self.display_only_mode})")
+        logger.info(
+            f"Complete result formatted (display_only_mode={self.display_only_mode})"
+        )
 
         return result
 
@@ -384,7 +407,7 @@ class OutputFormatter:
         original_prompt: str,
         enhanced_prompt: str,
         implementation_steps: List[str],
-        detected_standards: Optional[Dict[str, Any]] = None
+        detected_standards: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Format and display complete result to terminal (MEDIUM-3 fix).
@@ -403,10 +426,7 @@ class OutputFormatter:
         """
         # Format the result
         result = self.format_complete_result(
-            original_prompt,
-            enhanced_prompt,
-            implementation_steps,
-            detected_standards
+            original_prompt, enhanced_prompt, implementation_steps, detected_standards
         )
 
         # Display to terminal

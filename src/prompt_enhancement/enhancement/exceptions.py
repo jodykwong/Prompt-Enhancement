@@ -22,7 +22,7 @@ class AuthenticationError(EnhancementError):
         super().__init__(
             message,
             category="AUTH_ERROR",
-            recovery_suggestion="Check your API key configuration"
+            recovery_suggestion="Check your API key configuration",
         )
 
 
@@ -33,7 +33,7 @@ class RateLimitError(EnhancementError):
         super().__init__(
             message,
             category="RATE_LIMIT_ERROR",
-            recovery_suggestion="Wait a moment and try again"
+            recovery_suggestion="Wait a moment and try again",
         )
 
 
@@ -44,7 +44,7 @@ class TimeoutError(EnhancementError):
         super().__init__(
             message,
             category="TIMEOUT_ERROR",
-            recovery_suggestion="Request timeout - try again with a simpler prompt"
+            recovery_suggestion="Request timeout - try again with a simpler prompt",
         )
 
 
@@ -55,7 +55,7 @@ class ServerError(EnhancementError):
         super().__init__(
             message,
             category="SERVER_ERROR",
-            recovery_suggestion="Try again in a few moments"
+            recovery_suggestion="Try again in a few moments",
         )
 
 
@@ -66,5 +66,5 @@ class ValidationError(EnhancementError):
         super().__init__(
             message,
             category="VALIDATION_ERROR",
-            recovery_suggestion="Try with a different prompt"
+            recovery_suggestion="Try with a different prompt",
         )

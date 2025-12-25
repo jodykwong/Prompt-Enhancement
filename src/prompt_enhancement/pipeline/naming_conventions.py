@@ -130,7 +130,9 @@ class NamingConventionDetector:
     UPPER_SNAKE_CASE_PATTERN = re.compile(r"^[A-Z][A-Z0-9_]*$")
 
     # Language-specific extraction patterns
-    PYTHON_FUNCTION_PATTERN = re.compile(r"^\s*(?:def|async def)\s+([a-zA-Z_][a-zA-Z0-9_]*)")
+    PYTHON_FUNCTION_PATTERN = re.compile(
+        r"^\s*(?:def|async def)\s+([a-zA-Z_][a-zA-Z0-9_]*)"
+    )
     PYTHON_CLASS_PATTERN = re.compile(r"^\s*class\s+([a-zA-Z_][a-zA-Z0-9_]*)")
     PYTHON_VARIABLE_PATTERN = re.compile(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*=")
 
@@ -141,8 +143,12 @@ class NamingConventionDetector:
     GO_PATTERN = re.compile(r"func\s+(?:\([^)]*\))?\s*([a-zA-Z_][a-zA-Z0-9_]*)")
     GO_STRUCT_PATTERN = re.compile(r"type\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+struct")
 
-    JAVA_PATTERN = re.compile(r"(?:public|private|protected)?\s*(?:static)?\s*(?:final)?\s*\w+\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*[({]")
-    JAVA_CLASS_PATTERN = re.compile(r"(?:public|private)?\s*(?:final)?\s*class\s+([a-zA-Z_][a-zA-Z0-9_]*)")
+    JAVA_PATTERN = re.compile(
+        r"(?:public|private|protected)?\s*(?:static)?\s*(?:final)?\s*\w+\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*[({]"
+    )
+    JAVA_CLASS_PATTERN = re.compile(
+        r"(?:public|private)?\s*(?:final)?\s*class\s+([a-zA-Z_][a-zA-Z0-9_]*)"
+    )
 
     def __init__(
         self,
@@ -197,7 +203,9 @@ class NamingConventionDetector:
                 return None
 
             # Sample representative files
-            sampled_files = self._sample_files(files_result, self.max_files, tech_result)
+            sampled_files = self._sample_files(
+                files_result, self.max_files, tech_result
+            )
             if not sampled_files:
                 logger.warning("No files to sample for naming convention detection")
                 return None
@@ -207,7 +215,9 @@ class NamingConventionDetector:
 
             for file_path in sampled_files:
                 if self._is_timeout():
-                    logger.warning("Naming convention detection timeout during file processing")
+                    logger.warning(
+                        "Naming convention detection timeout during file processing"
+                    )
                     break
 
                 try:
@@ -279,13 +289,22 @@ class NamingConventionDetector:
                 # Exclude test, vendor, and build directories
                 # Be more precise: match directory separators or start of string
                 skip_patterns = [
-                    "/test/", "/tests/", "\\test\\", "\\tests\\",
-                    "/vendor/", "\\vendor\\",
-                    "/node_modules/", "\\node_modules\\",
-                    "/.git/", "\\.git\\",
-                    "/build/", "\\build\\",
-                    "/dist/", "\\dist\\",
-                    "/__pycache__/", "\\__pycache__\\",
+                    "/test/",
+                    "/tests/",
+                    "\\test\\",
+                    "\\tests\\",
+                    "/vendor/",
+                    "\\vendor\\",
+                    "/node_modules/",
+                    "\\node_modules\\",
+                    "/.git/",
+                    "\\.git\\",
+                    "/build/",
+                    "\\build\\",
+                    "/dist/",
+                    "\\dist\\",
+                    "/__pycache__/",
+                    "\\__pycache__\\",
                 ]
 
                 if any(pattern in file_lower for pattern in skip_patterns):
@@ -344,18 +363,16 @@ class NamingConventionDetector:
         """
         # Language extension mapping
         lang_extensions = {
-            ProjectLanguage.PYTHON: {'.py'},
-            ProjectLanguage.NODEJS: {'.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs'},
-            ProjectLanguage.GO: {'.go'},
-            ProjectLanguage.RUST: {'.rs'},
-            ProjectLanguage.JAVA: {'.java'},
-            ProjectLanguage.CSHARP: {'.cs'},
+            ProjectLanguage.PYTHON: {".py"},
+            ProjectLanguage.NODEJS: {".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs"},
+            ProjectLanguage.GO: {".go"},
+            ProjectLanguage.RUST: {".rs"},
+            ProjectLanguage.JAVA: {".java"},
+            ProjectLanguage.CSHARP: {".cs"},
         }
 
         # Group files by language
-        files_by_lang: Dict[ProjectLanguage, List] = {
-            tech_result.primary_language: []
-        }
+        files_by_lang: Dict[ProjectLanguage, List] = {tech_result.primary_language: []}
         for lang in tech_result.secondary_languages:
             files_by_lang[lang] = []
 
@@ -378,7 +395,9 @@ class NamingConventionDetector:
         # Calculate sampling quotas
         primary_quota = int(max_samples * 0.6)
         num_secondary = len(tech_result.secondary_languages)
-        secondary_quota_per_lang = int((max_samples * 0.4) / num_secondary) if num_secondary > 0 else 0
+        secondary_quota_per_lang = (
+            int((max_samples * 0.4) / num_secondary) if num_secondary > 0 else 0
+        )
 
         # Sample from each language
         sampled = []
@@ -555,7 +574,11 @@ class NamingConventionDetector:
             if match:
                 identifier = match.group(1)
                 # FIX MEDIUM #5: Skip single-letter identifiers
-                if identifier and len(identifier) > 1 and not identifier.startswith("_"):
+                if (
+                    identifier
+                    and len(identifier) > 1
+                    and not identifier.startswith("_")
+                ):
                     convention = self._classify_convention(identifier)
                     patterns.append(
                         ConventionOccurrence(
@@ -762,11 +785,19 @@ class NamingConventionDetector:
     ) -> NamingConventionResult:
         """Create result from collected occurrences."""
         # Categorize by type
-        function_occurrences = [o for o in occurrences if o.category == IdentifierCategory.FUNCTION]
-        class_occurrences = [o for o in occurrences if o.category == IdentifierCategory.CLASS]
-        variable_occurrences = [o for o in occurrences if o.category == IdentifierCategory.VARIABLE]
+        function_occurrences = [
+            o for o in occurrences if o.category == IdentifierCategory.FUNCTION
+        ]
+        class_occurrences = [
+            o for o in occurrences if o.category == IdentifierCategory.CLASS
+        ]
+        variable_occurrences = [
+            o for o in occurrences if o.category == IdentifierCategory.VARIABLE
+        ]
         # FIX HIGH #2: Use category field, not convention_type (AC4 context-aware detection)
-        constant_occurrences = [o for o in occurrences if o.category == IdentifierCategory.CONSTANT]
+        constant_occurrences = [
+            o for o in occurrences if o.category == IdentifierCategory.CONSTANT
+        ]
 
         # Compute frequencies
         overall_frequencies = self._compute_frequencies(occurrences)
@@ -786,7 +817,9 @@ class NamingConventionDetector:
         consistency = self._compute_consistency(occurrences) if occurrences else 0.0
         overall_confidence = self._calculate_confidence(len(occurrences), consistency)
 
-        coverage_percentage = (files_analyzed / total_files * 100) if total_files > 0 else 0.0
+        coverage_percentage = (
+            (files_analyzed / total_files * 100) if total_files > 0 else 0.0
+        )
 
         return NamingConventionResult(
             overall_dominant_convention=overall_dominant,
@@ -805,7 +838,9 @@ class NamingConventionDetector:
             consistency_score=consistency,
         )
 
-    def _create_empty_result(self, files_analyzed: int, files_result: ProjectIndicatorResult) -> NamingConventionResult:
+    def _create_empty_result(
+        self, files_analyzed: int, files_result: ProjectIndicatorResult
+    ) -> NamingConventionResult:
         """Create empty result when no identifiers found."""
         total_files = len(files_result.files_found) if files_result.files_found else 0
 
@@ -826,7 +861,9 @@ class NamingConventionDetector:
             consistency_score=0.0,
         )
 
-    def _compute_frequencies(self, occurrences: List[ConventionOccurrence]) -> List[ConventionFrequency]:
+    def _compute_frequencies(
+        self, occurrences: List[ConventionOccurrence]
+    ) -> List[ConventionFrequency]:
         """Compute convention frequencies."""
         if not occurrences:
             return []
@@ -847,7 +884,9 @@ class NamingConventionDetector:
         total = sum(counts.values())
         frequencies: List[ConventionFrequency] = []
 
-        for convention_type, count in sorted(counts.items(), key=lambda x: x[1], reverse=True):
+        for convention_type, count in sorted(
+            counts.items(), key=lambda x: x[1], reverse=True
+        ):
             percentage = (count / total * 100) if total > 0 else 0.0
             confidence = min(percentage / 100.0, 1.0)  # Confidence based on percentage
 
@@ -885,7 +924,9 @@ class NamingConventionDetector:
 
         return min(consistency, 1.0)
 
-    def _calculate_confidence(self, sample_size: int, consistency_percentage: float) -> float:
+    def _calculate_confidence(
+        self, sample_size: int, consistency_percentage: float
+    ) -> float:
         """
         Calculate confidence score (0.0-1.0).
 
@@ -900,6 +941,7 @@ class NamingConventionDetector:
         # Use logarithmic scaling: log(sample_size + 1) / log(101) to reach ~1.0 at 100
         if sample_size > 0:
             import math
+
             sample_score = min(math.log(sample_size + 1) / math.log(101), 1.0) * 0.5
         else:
             sample_score = 0.0

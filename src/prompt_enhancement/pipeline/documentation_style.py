@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 
 class DocumentationStyle(str, Enum):
     """Supported documentation styles"""
+
     GOOGLE = "google"
     NUMPY = "numpy"
     PEP257 = "pep257"
@@ -52,6 +53,7 @@ class DocumentationStyle(str, Enum):
 @dataclass
 class DocumentationStyleDetection:
     """Single documentation style detection"""
+
     style: DocumentationStyle
     confidence: float
     count: int = 0
@@ -61,6 +63,7 @@ class DocumentationStyleDetection:
 @dataclass
 class DocumentationCoverage:
     """Documentation coverage metrics"""
+
     documented_count: int = 0
     total_count: int = 0
     coverage_percentage: float = 0.0
@@ -70,6 +73,7 @@ class DocumentationCoverage:
 @dataclass
 class DocumentationStyleResult:
     """Result of documentation style detection"""
+
     primary_style: Optional[DocumentationStyle] = None
     detected_styles: List[DocumentationStyleDetection] = field(default_factory=list)
     coverage: Optional[DocumentationCoverage] = None
@@ -85,32 +89,17 @@ class DocumentationStyleDetector:
     # Regex patterns for documentation style detection
     GOOGLE_STYLE_PATTERN = re.compile(
         r"^\s*(Args|Returns|Raises|Attributes|Examples|Note|Warning):\s*$",
-        re.MULTILINE | re.IGNORECASE
+        re.MULTILINE | re.IGNORECASE,
     )
     NUMPY_STYLE_PATTERN = re.compile(
         r"^\s*(Parameters|Returns|Raises|Examples|Notes|References|See Also)\s*\n\s*-+\s*$",
-        re.MULTILINE | re.IGNORECASE
+        re.MULTILINE | re.IGNORECASE,
     )
-    PEP257_PATTERN = re.compile(
-        r'^\s*"""[^"]*"""',
-        re.MULTILINE
-    )
-    SPHINX_STYLE_PATTERN = re.compile(
-        r":\w+(`[^`]+`)?:",
-        re.MULTILINE
-    )
-    JSDOC_PATTERN = re.compile(
-        r"/\*\*\s*\n[\s*]*@\w+",
-        re.MULTILINE
-    )
-    JAVADOC_PATTERN = re.compile(
-        r"/\*\*\s*\n[\s*]*@\w+",
-        re.MULTILINE
-    )
-    GO_DOC_PATTERN = re.compile(
-        r"^//\s+\w+\s+\w+\s*$",
-        re.MULTILINE
-    )
+    PEP257_PATTERN = re.compile(r'^\s*"""[^"]*"""', re.MULTILINE)
+    SPHINX_STYLE_PATTERN = re.compile(r":\w+(`[^`]+`)?:", re.MULTILINE)
+    JSDOC_PATTERN = re.compile(r"/\*\*\s*\n[\s*]*@\w+", re.MULTILINE)
+    JAVADOC_PATTERN = re.compile(r"/\*\*\s*\n[\s*]*@\w+", re.MULTILINE)
+    GO_DOC_PATTERN = re.compile(r"^//\s+\w+\s+\w+\s*$", re.MULTILINE)
 
     # File patterns for different languages
     PYTHON_FILE_PATTERN = r"\.(py)$"
@@ -122,39 +111,44 @@ class DocumentationStyleDetector:
     # Function/class patterns for counting
     PYTHON_FUNCTION_PATTERN = re.compile(r"^\s*def\s+\w+", re.MULTILINE)
     PYTHON_CLASS_PATTERN = re.compile(r"^\s*class\s+\w+", re.MULTILINE)
-    JAVASCRIPT_FUNCTION_PATTERN = re.compile(r"(function\s+\w+|const\s+\w+\s*=\s*(?:async\s*)?\(|class\s+\w+)", re.MULTILINE)
-    JAVA_FUNCTION_PATTERN = re.compile(r"(public\s+\w+|private\s+\w+|protected\s+\w+)", re.MULTILINE)
+    JAVASCRIPT_FUNCTION_PATTERN = re.compile(
+        r"(function\s+\w+|const\s+\w+\s*=\s*(?:async\s*)?\(|class\s+\w+)", re.MULTILINE
+    )
+    JAVA_FUNCTION_PATTERN = re.compile(
+        r"(public\s+\w+|private\s+\w+|protected\s+\w+)", re.MULTILINE
+    )
     GO_FUNCTION_PATTERN = re.compile(r"^func\s+\(?\w+\)?", re.MULTILINE)
 
     # Docstring extraction patterns
     PYTHON_DOCSTRING_PATTERN = re.compile(
-        r'(?:"""|\'\'\')(.*?)(?:"""|\'\'\')',
-        re.DOTALL
+        r'(?:"""|\'\'\')(.*?)(?:"""|\'\'\')', re.DOTALL
     )
-    JAVASCRIPT_COMMENT_PATTERN = re.compile(
-        r"/\*\*(.*?)\*/",
-        re.DOTALL
-    )
-    JAVA_COMMENT_PATTERN = re.compile(
-        r"/\*\*(.*?)\*/",
-        re.DOTALL
-    )
+    JAVASCRIPT_COMMENT_PATTERN = re.compile(r"/\*\*(.*?)\*/", re.DOTALL)
+    JAVA_COMMENT_PATTERN = re.compile(r"/\*\*(.*?)\*/", re.DOTALL)
 
     # Special documentation files
     SPECIAL_DOC_FILES = {
-        "README.md", "README.txt", "README",
-        "CONTRIBUTING.md", "CONTRIBUTING.txt",
-        "ARCHITECTURE.md", "ARCHITECTURE.txt",
-        "DESIGN.md", "DESIGN.txt",
-        "CHANGELOG.md", "CHANGELOG.txt",
-        "API.md", "API.txt",
-        "docs/", "doc/"
+        "README.md",
+        "README.txt",
+        "README",
+        "CONTRIBUTING.md",
+        "CONTRIBUTING.txt",
+        "ARCHITECTURE.md",
+        "ARCHITECTURE.txt",
+        "DESIGN.md",
+        "DESIGN.txt",
+        "CHANGELOG.md",
+        "CHANGELOG.txt",
+        "API.md",
+        "API.txt",
+        "docs/",
+        "doc/",
     }
 
     def __init__(
         self,
         timeout_sec: float = 2.0,
-        performance_tracker: Optional['PerformanceTracker'] = None,
+        performance_tracker: Optional["PerformanceTracker"] = None,
         file_access_handler: Optional[FileAccessHandler] = None,
     ):
         """
@@ -174,7 +168,7 @@ class DocumentationStyleDetector:
         self,
         tech_result: ProjectTypeDetectionResult,
         files_result: ProjectIndicatorResult,
-        project_root: str = "."
+        project_root: str = ".",
     ) -> Optional[DocumentationStyleResult]:
         """
         Detect documentation style used in project.
@@ -202,7 +196,7 @@ class DocumentationStyleDetector:
             ProjectLanguage.PYTHON,
             ProjectLanguage.NODEJS,
             ProjectLanguage.JAVA,
-            ProjectLanguage.GO
+            ProjectLanguage.GO,
         ]:
             return None
 
@@ -258,7 +252,9 @@ class DocumentationStyleDetector:
 
         # Build result
         if detected_styles:
-            sorted_styles = sorted(detected_styles.items(), key=lambda x: x[1], reverse=True)
+            sorted_styles = sorted(
+                detected_styles.items(), key=lambda x: x[1], reverse=True
+            )
             result.primary_style = sorted_styles[0][0]
 
             total_occurrences = sum(detected_styles.values())
@@ -271,7 +267,11 @@ class DocumentationStyleDetector:
                         style=style,
                         confidence=confidence,
                         count=count,
-                        percentage=(count / total_occurrences * 100) if total_occurrences > 0 else 0
+                        percentage=(
+                            (count / total_occurrences * 100)
+                            if total_occurrences > 0
+                            else 0
+                        ),
                     )
                 )
 
@@ -290,7 +290,7 @@ class DocumentationStyleDetector:
         self,
         tech_result: ProjectTypeDetectionResult,
         files_result: ProjectIndicatorResult,
-        project_root: str
+        project_root: str,
     ) -> List[str]:
         """Sample representative source files from project"""
         source_files = []
@@ -319,10 +319,16 @@ class DocumentationStyleDetector:
         for file_path in candidate_files:
             path_lower = file_path.lower()
             # Exclude vendor directories and caches
-            if any(x in path_lower for x in ['/node_modules/', '/vendor/', '/__pycache__/', '/.git/']):
+            if any(
+                x in path_lower
+                for x in ["/node_modules/", "/vendor/", "/__pycache__/", "/.git/"]
+            ):
                 continue
             # Exclude test files (more specific patterns)
-            if any(x in path_lower for x in ['/test/', '/tests/', '/spec/', '/_test_', '_test.', '.test.']):
+            if any(
+                x in path_lower
+                for x in ["/test/", "/tests/", "/spec/", "/_test_", "_test.", ".test."]
+            ):
                 continue
             if re.search(pattern, file_path):
                 source_files.append(file_path)
@@ -331,9 +337,10 @@ class DocumentationStyleDetector:
         # Group files by directory to ensure cross-directory representation
         if len(source_files) > 100:
             from collections import defaultdict
+
             files_by_dir = defaultdict(list)
             for f in source_files:
-                dir_path = os.path.dirname(f) or '.'
+                dir_path = os.path.dirname(f) or "."
                 files_by_dir[dir_path].append(f)
 
             # Sample proportionally from each directory
@@ -345,19 +352,26 @@ class DocumentationStyleDetector:
             # If we haven't reached 100, add more files
             if len(sampled) < 100:
                 remaining = [f for f in source_files if f not in sampled]
-                sampled.extend(remaining[:100 - len(sampled)])
+                sampled.extend(remaining[: 100 - len(sampled)])
 
             return sampled[:100]
 
         return source_files
 
-    def _scan_for_source_files(self, project_root: str, tech_result: ProjectTypeDetectionResult) -> List[str]:
+    def _scan_for_source_files(
+        self, project_root: str, tech_result: ProjectTypeDetectionResult
+    ) -> List[str]:
         """Scan directory for source files"""
         files = []
         try:
             for root, dirs, filenames in os.walk(project_root):
                 # Skip hidden and vendor directories
-                dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['node_modules', 'vendor', '__pycache__']]
+                dirs[:] = [
+                    d
+                    for d in dirs
+                    if not d.startswith(".")
+                    and d not in ["node_modules", "vendor", "__pycache__"]
+                ]
 
                 for filename in filenames:
                     files.append(os.path.join(root, filename))
@@ -404,11 +418,11 @@ class DocumentationStyleDetector:
 
         # Detect JSDoc style - look for /** ... */ patterns with @ tags
         # Simplified pattern that handles JSDoc comments
-        if '/**' in content and '@' in content:
+        if "/**" in content and "@" in content:
             # Count JSDoc blocks
-            jsdoc_count = len(re.findall(r'/\*\*[\s\S]*?\*/', content))
+            jsdoc_count = len(re.findall(r"/\*\*[\s\S]*?\*/", content))
             # Count JSDoc tags
-            tag_count = len(re.findall(r'@\w+', content))
+            tag_count = len(re.findall(r"@\w+", content))
 
             # If we find both JSDoc blocks and tags, it's JSDoc
             if jsdoc_count > 0 and tag_count > 0:
@@ -421,11 +435,15 @@ class DocumentationStyleDetector:
         styles = {}
 
         # Detect Javadoc style - look for /** ... */ patterns with @ tags
-        if '/**' in content and '@' in content:
+        if "/**" in content and "@" in content:
             # Count Javadoc blocks
-            javadoc_count = len(re.findall(r'/\*\*[\s\S]*?\*/', content))
+            javadoc_count = len(re.findall(r"/\*\*[\s\S]*?\*/", content))
             # Count Javadoc tags like @param, @return, @throws, @see
-            tag_count = len(re.findall(r'@(param|return|throws|see|author|version|deprecated)', content))
+            tag_count = len(
+                re.findall(
+                    r"@(param|return|throws|see|author|version|deprecated)", content
+                )
+            )
 
             # If we find both Javadoc blocks and tags, it's Javadoc
             if javadoc_count > 0 and tag_count > 0:
@@ -439,13 +457,15 @@ class DocumentationStyleDetector:
 
         # Detect Go doc comments - comments directly before declarations
         # Pattern: // followed by text, appearing before func, type, const, var declarations
-        if '//' in content:
+        if "//" in content:
             # Look for Go doc patterns: // Comment followed by func/type/const/var declarations
-            go_doc_count = len(re.findall(
-                r'//\s+\w+.*?\n\s*(func|type|const|var|package)\s+\w+',
-                content,
-                re.MULTILINE
-            ))
+            go_doc_count = len(
+                re.findall(
+                    r"//\s+\w+.*?\n\s*(func|type|const|var|package)\s+\w+",
+                    content,
+                    re.MULTILINE,
+                )
+            )
 
             if go_doc_count > 0:
                 styles[DocumentationStyle.GO_DOC] = go_doc_count
@@ -470,9 +490,7 @@ class DocumentationStyleDetector:
         return len(self.GO_DOC_PATTERN.findall(content))
 
     def _calculate_coverage(
-        self,
-        source_files: List[str],
-        tech_result: ProjectTypeDetectionResult
+        self, source_files: List[str], tech_result: ProjectTypeDetectionResult
     ) -> DocumentationCoverage:
         """
         Calculate documentation coverage metrics.
@@ -544,7 +562,7 @@ class DocumentationStyleDetector:
         return DocumentationCoverage(
             documented_count=documented_count,
             total_count=total_count,
-            coverage_percentage=coverage_pct
+            coverage_percentage=coverage_pct,
         )
 
     def _calculate_confidence(self, count: int, total: int, file_count: int) -> float:
@@ -573,8 +591,8 @@ class DocumentationStyleDetector:
 
         try:
             for item in self.SPECIAL_DOC_FILES:
-                if item.endswith('/'):
-                    path = Path(project_root) / item.rstrip('/')
+                if item.endswith("/"):
+                    path = Path(project_root) / item.rstrip("/")
                     if path.is_dir():
                         special_files.append(str(path))
                 else:

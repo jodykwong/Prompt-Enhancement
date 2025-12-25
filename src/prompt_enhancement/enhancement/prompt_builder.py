@@ -86,7 +86,9 @@ class PromptBuilder:
             sections.append(self._build_template_section(project_context))
 
         prompt = "\n\n".join(sections)
-        logger.debug(f"Built prompt with {len(sections)} sections ({len(prompt)} chars)")
+        logger.debug(
+            f"Built prompt with {len(sections)} sections ({len(prompt)} chars)"
+        )
         return prompt
 
     def _build_original_prompt_section(self, user_prompt: str) -> str:
@@ -121,7 +123,9 @@ class PromptBuilder:
         for standard_name, standard in sorted(context.detected_standards.items()):
             # Include standard name and detected value
             confidence_str = f"{standard.confidence:.0%}"
-            lines.append(f"• {standard_name}: {standard.detected_value} ({confidence_str})")
+            lines.append(
+                f"• {standard_name}: {standard.detected_value} ({confidence_str})"
+            )
 
             # AC3: Mark low-confidence standards explicitly
             if standard.confidence < 0.60:
@@ -170,7 +174,9 @@ class PromptBuilder:
             lines.append(f"Current branch: {context.git_context.current_branch}")
 
         if context.git_context.active_days:
-            lines.append(f"Development duration: {context.git_context.active_days} days")
+            lines.append(
+                f"Development duration: {context.git_context.active_days} days"
+            )
 
         lines.append("</GIT_HISTORY>")
         return "\n".join(lines)

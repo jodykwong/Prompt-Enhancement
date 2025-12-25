@@ -90,7 +90,9 @@ class TemplateTrigger:
         best_score = 0.0
 
         for template in templates:
-            score, trigger_word = self._calculate_match_score(user_words, template.triggers)
+            score, trigger_word = self._calculate_match_score(
+                user_words, template.triggers
+            )
 
             if score > best_score:
                 best_score = score
@@ -124,7 +126,8 @@ class TemplateTrigger:
 
         # Split by common delimiters
         import re
-        words = re.findall(r'\w+', text_lower, re.UNICODE)
+
+        words = re.findall(r"\w+", text_lower, re.UNICODE)
 
         return words
 
@@ -297,14 +300,20 @@ class CodingTemplateManager:
         Returns:
             CodingTemplate object
         """
-        with open(yaml_path, 'r', encoding='utf-8') as f:
+        with open(yaml_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         # Validate required fields
         required_fields = [
-            'name', 'task_type', 'description', 'triggers',
-            'checklist', 'best_practices', 'common_pitfalls',
-            'acceptance_criteria', 'examples'
+            "name",
+            "task_type",
+            "description",
+            "triggers",
+            "checklist",
+            "best_practices",
+            "common_pitfalls",
+            "acceptance_criteria",
+            "examples",
         ]
 
         for field in required_fields:

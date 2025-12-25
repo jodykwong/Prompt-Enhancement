@@ -32,15 +32,17 @@ logger = logging.getLogger(__name__)
 # 数据结构定义
 # ============================================================================
 
+
 @dataclass
 class ExtractedSymbol:
     """提取的符号信息"""
-    name: str                          # 函数/类名
-    symbol_type: str                   # 'function', 'class', 'method', 'async_function'
-    signature: str                     # 完整签名
-    line_number: int                   # 所在行号
-    parent_class: Optional[str] = None # 如果是方法，所属类名
-    docstring: Optional[str] = None    # 文档字符串（可选）
+
+    name: str  # 函数/类名
+    symbol_type: str  # 'function', 'class', 'method', 'async_function'
+    signature: str  # 完整签名
+    line_number: int  # 所在行号
+    parent_class: Optional[str] = None  # 如果是方法，所属类名
+    docstring: Optional[str] = None  # 文档字符串（可选）
     decorators: List[str] = field(default_factory=list)  # 装饰器列表
 
     def to_dict(self) -> Dict[str, Any]:
@@ -51,49 +53,51 @@ class ExtractedSymbol:
 @dataclass
 class FileSymbols:
     """文件的符号索引"""
-    file_path: str                     # 文件路径
-    language: str                      # 'python', 'javascript'
-    symbols: List[ExtractedSymbol]     # 符号列表
-    extracted_at: datetime             # 提取时间
-    file_hash: str                     # 用于检测文件变更
+
+    file_path: str  # 文件路径
+    language: str  # 'python', 'javascript'
+    symbols: List[ExtractedSymbol]  # 符号列表
+    extracted_at: datetime  # 提取时间
+    file_hash: str  # 用于检测文件变更
 
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典格式（用于序列化）"""
         return {
-            'file_path': self.file_path,
-            'language': self.language,
-            'symbols': [s.to_dict() for s in self.symbols],
-            'extracted_at': self.extracted_at.isoformat(),
-            'file_hash': self.file_hash,
+            "file_path": self.file_path,
+            "language": self.language,
+            "symbols": [s.to_dict() for s in self.symbols],
+            "extracted_at": self.extracted_at.isoformat(),
+            "file_hash": self.file_hash,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'FileSymbols':
+    def from_dict(cls, data: Dict[str, Any]) -> "FileSymbols":
         """从字典恢复（用于反序列化）"""
         symbols = [
             ExtractedSymbol(
-                name=s['name'],
-                symbol_type=s['symbol_type'],
-                signature=s['signature'],
-                line_number=s['line_number'],
-                parent_class=s.get('parent_class'),
-                docstring=s.get('docstring'),
-                decorators=s.get('decorators', []),
+                name=s["name"],
+                symbol_type=s["symbol_type"],
+                signature=s["signature"],
+                line_number=s["line_number"],
+                parent_class=s.get("parent_class"),
+                docstring=s.get("docstring"),
+                decorators=s.get("decorators", []),
             )
-            for s in data['symbols']
+            for s in data["symbols"]
         ]
         return cls(
-            file_path=data['file_path'],
-            language=data['language'],
+            file_path=data["file_path"],
+            language=data["language"],
             symbols=symbols,
-            extracted_at=datetime.fromisoformat(data['extracted_at']),
-            file_hash=data['file_hash'],
+            extracted_at=datetime.fromisoformat(data["extracted_at"]),
+            file_hash=data["file_hash"],
         )
 
 
 # ============================================================================
 # Python 符号提取器
 # ============================================================================
+
 
 class PythonSymbolExtractor:
     """Python 符号提取器 - 基于 AST 的精确符号识别。
@@ -164,7 +168,7 @@ class PythonSymbolExtractor:
         symbols = []
 
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 source_code = f.read()
 
             # 解析AST
@@ -213,7 +217,7 @@ class PythonSymbolExtractor:
 
         return ExtractedSymbol(
             name=node.name,
-            symbol_type='function',
+            symbol_type="function",
             signature=signature,
             line_number=node.lineno,
             decorators=decorators,
@@ -237,7 +241,7 @@ class PythonSymbolExtractor:
 
         return ExtractedSymbol(
             name=node.name,
-            symbol_type='async_function',
+            symbol_type="async_function",
             signature=signature,
             line_number=node.lineno,
             decorators=decorators,
@@ -246,7 +250,7 @@ class PythonSymbolExtractor:
 
     def _extract_class(self, node: ast.ClassDef) -> ExtractedSymbol:
         """提取类定义"""
-        bases = ', '.join(self._get_base_name(b) for b in node.bases)
+        bases = ", ".join(self._get_base_name(b) for b in node.bases)
         if bases:
             signature = f"class {node.name}({bases})"
         else:
@@ -256,7 +260,7 @@ class PythonSymbolExtractor:
 
         return ExtractedSymbol(
             name=node.name,
-            symbol_type='class',
+            symbol_type="class",
             signature=signature,
             line_number=node.lineno,
             docstring=docstring,
@@ -279,29 +283,33 @@ class PythonSymbolExtractor:
                 decorators = [self._get_decorator_name(d) for d in node.decorator_list]
                 docstring = ast.get_docstring(node)
 
-                methods.append(ExtractedSymbol(
-                    name=node.name,
-                    symbol_type='method',
-                    signature=signature,
-                    line_number=node.lineno,
-                    parent_class=class_node.name,
-                    decorators=decorators,
-                    docstring=docstring,
-                ))
+                methods.append(
+                    ExtractedSymbol(
+                        name=node.name,
+                        symbol_type="method",
+                        signature=signature,
+                        line_number=node.lineno,
+                        parent_class=class_node.name,
+                        decorators=decorators,
+                        docstring=docstring,
+                    )
+                )
             elif isinstance(node, ast.AsyncFunctionDef):
                 signature = f"async {self._build_signature(node)}"
                 decorators = [self._get_decorator_name(d) for d in node.decorator_list]
                 docstring = ast.get_docstring(node)
 
-                methods.append(ExtractedSymbol(
-                    name=node.name,
-                    symbol_type='method',
-                    signature=signature,
-                    line_number=node.lineno,
-                    parent_class=class_node.name,
-                    decorators=decorators,
-                    docstring=docstring,
-                ))
+                methods.append(
+                    ExtractedSymbol(
+                        name=node.name,
+                        symbol_type="method",
+                        signature=signature,
+                        line_number=node.lineno,
+                        parent_class=class_node.name,
+                        decorators=decorators,
+                        docstring=docstring,
+                    )
+                )
 
         return methods
 
@@ -392,14 +400,15 @@ class PythonSymbolExtractor:
 # JavaScript 符号提取器
 # ============================================================================
 
+
 class JavaScriptSymbolExtractor:
     """JavaScript符号提取器 - 使用正则表达式"""
 
     # 正则模式
-    FUNCTION_PATTERN = r'function\s+(\w+)\s*\((.*?)\)'
-    ARROW_FUNCTION_PATTERN = r'(?:const|let|var)\s+(\w+)\s*=\s*\((.*?)\)\s*=>'
-    CLASS_PATTERN = r'class\s+(\w+)(?:\s+extends\s+(\w+))?'
-    METHOD_PATTERN = r'(\w+)\s*\((.*?)\)\s*\{'
+    FUNCTION_PATTERN = r"function\s+(\w+)\s*\((.*?)\)"
+    ARROW_FUNCTION_PATTERN = r"(?:const|let|var)\s+(\w+)\s*=\s*\((.*?)\)\s*=>"
+    CLASS_PATTERN = r"class\s+(\w+)(?:\s+extends\s+(\w+))?"
+    METHOD_PATTERN = r"(\w+)\s*\((.*?)\)\s*\{"
 
     def extract(self, file_path: str) -> List[ExtractedSymbol]:
         """
@@ -414,9 +423,9 @@ class JavaScriptSymbolExtractor:
         symbols = []
 
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 lines = f.readlines()
-                source_code = ''.join(lines)
+                source_code = "".join(lines)
 
             # 提取函数声明
             symbols.extend(self._extract_functions(source_code, lines))
@@ -437,7 +446,9 @@ class JavaScriptSymbolExtractor:
 
         return symbols
 
-    def _extract_functions(self, source_code: str, lines: List[str]) -> List[ExtractedSymbol]:
+    def _extract_functions(
+        self, source_code: str, lines: List[str]
+    ) -> List[ExtractedSymbol]:
         """提取函数声明"""
         symbols = []
         pattern = re.compile(self.FUNCTION_PATTERN)
@@ -445,19 +456,23 @@ class JavaScriptSymbolExtractor:
         for match in pattern.finditer(source_code):
             name = match.group(1)
             args = match.group(2)
-            line_number = source_code[:match.start()].count('\n') + 1
+            line_number = source_code[: match.start()].count("\n") + 1
 
             signature = f"function {name}({args})"
-            symbols.append(ExtractedSymbol(
-                name=name,
-                symbol_type='function',
-                signature=signature,
-                line_number=line_number,
-            ))
+            symbols.append(
+                ExtractedSymbol(
+                    name=name,
+                    symbol_type="function",
+                    signature=signature,
+                    line_number=line_number,
+                )
+            )
 
         return symbols
 
-    def _extract_arrow_functions(self, source_code: str, lines: List[str]) -> List[ExtractedSymbol]:
+    def _extract_arrow_functions(
+        self, source_code: str, lines: List[str]
+    ) -> List[ExtractedSymbol]:
         """提取箭头函数"""
         symbols = []
         pattern = re.compile(self.ARROW_FUNCTION_PATTERN)
@@ -465,19 +480,23 @@ class JavaScriptSymbolExtractor:
         for match in pattern.finditer(source_code):
             name = match.group(1)
             args = match.group(2)
-            line_number = source_code[:match.start()].count('\n') + 1
+            line_number = source_code[: match.start()].count("\n") + 1
 
             signature = f"const {name} = ({args}) => ..."
-            symbols.append(ExtractedSymbol(
-                name=name,
-                symbol_type='function',
-                signature=signature,
-                line_number=line_number,
-            ))
+            symbols.append(
+                ExtractedSymbol(
+                    name=name,
+                    symbol_type="function",
+                    signature=signature,
+                    line_number=line_number,
+                )
+            )
 
         return symbols
 
-    def _extract_classes(self, source_code: str, lines: List[str]) -> List[ExtractedSymbol]:
+    def _extract_classes(
+        self, source_code: str, lines: List[str]
+    ) -> List[ExtractedSymbol]:
         """提取类定义和方法"""
         symbols = []
         class_pattern = re.compile(self.CLASS_PATTERN)
@@ -485,7 +504,7 @@ class JavaScriptSymbolExtractor:
         for class_match in class_pattern.finditer(source_code):
             class_name = class_match.group(1)
             extends = class_match.group(2)
-            class_line = source_code[:class_match.start()].count('\n') + 1
+            class_line = source_code[: class_match.start()].count("\n") + 1
 
             # 类定义
             if extends:
@@ -493,12 +512,14 @@ class JavaScriptSymbolExtractor:
             else:
                 signature = f"class {class_name}"
 
-            symbols.append(ExtractedSymbol(
-                name=class_name,
-                symbol_type='class',
-                signature=signature,
-                line_number=class_line,
-            ))
+            symbols.append(
+                ExtractedSymbol(
+                    name=class_name,
+                    symbol_type="class",
+                    signature=signature,
+                    line_number=class_line,
+                )
+            )
 
             # 提取类的方法
             class_body_start = class_match.end()
@@ -508,20 +529,25 @@ class JavaScriptSymbolExtractor:
             for method_match in method_pattern.finditer(class_body):
                 method_name = method_match.group(1)
                 # 跳过特殊方法
-                if method_name in ['if', 'else', 'while', 'for']:
+                if method_name in ["if", "else", "while", "for"]:
                     continue
 
                 method_args = method_match.group(2)
-                method_line = source_code[:class_body_start + method_match.start()].count('\n') + 1
+                method_line = (
+                    source_code[: class_body_start + method_match.start()].count("\n")
+                    + 1
+                )
 
                 signature = f"{method_name}({method_args})"
-                symbols.append(ExtractedSymbol(
-                    name=method_name,
-                    symbol_type='method',
-                    signature=signature,
-                    line_number=method_line,
-                    parent_class=class_name,
-                ))
+                symbols.append(
+                    ExtractedSymbol(
+                        name=method_name,
+                        symbol_type="method",
+                        signature=signature,
+                        line_number=method_line,
+                        parent_class=class_name,
+                    )
+                )
 
         return symbols
 
@@ -532,10 +558,10 @@ class JavaScriptSymbolExtractor:
         end = start
 
         for i in range(start, len(source_code)):
-            if source_code[i] == '{':
+            if source_code[i] == "{":
                 brace_count += 1
                 in_class = True
-            elif source_code[i] == '}':
+            elif source_code[i] == "}":
                 brace_count -= 1
                 if in_class and brace_count == 0:
                     end = i
@@ -547,6 +573,7 @@ class JavaScriptSymbolExtractor:
 # ============================================================================
 # 符号缓存
 # ============================================================================
+
 
 class SymbolCache:
     """智能符号索引缓存 - 双层缓存架构（内存+磁盘）。
@@ -631,7 +658,7 @@ class SymbolCache:
         cache_file = self._get_cache_file(file_path)
         if cache_file.exists():
             try:
-                with open(cache_file, 'r') as f:
+                with open(cache_file, "r") as f:
                     data = json.load(f)
                 cached = FileSymbols.from_dict(data)
 
@@ -675,7 +702,7 @@ class SymbolCache:
             cache_file = self._get_cache_file(file_path)
             cache_file.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(cache_file, 'w') as f:
+            with open(cache_file, "w") as f:
                 json.dump(symbols.to_dict(), f, indent=2)
 
             logger.debug(f"Cached symbols for {file_path}")
@@ -716,7 +743,7 @@ class SymbolCache:
     def _compute_file_hash(self, file_path: str) -> str:
         """计算文件的MD5哈希"""
         try:
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 return hashlib.md5(f.read()).hexdigest()
         except Exception as e:
             logger.warning(f"Error computing hash for {file_path}: {e}")
@@ -731,6 +758,7 @@ class SymbolCache:
 # ============================================================================
 # 符号索引器（组合类）
 # ============================================================================
+
 
 class SymbolIndexer:
     """统一的符号提取和索引接口。
@@ -767,9 +795,7 @@ class SymbolIndexer:
     """
 
     def __init__(
-        self,
-        project_root: Optional[str] = None,
-        use_cache: bool = True
+        self, project_root: Optional[str] = None, use_cache: bool = True
     ) -> None:
         """初始化符号索引器。
 
@@ -812,16 +838,16 @@ class SymbolIndexer:
         # 根据文件扩展名选择提取器
         file_ext = Path(file_path).suffix.lower()
 
-        if file_ext == '.py':
+        if file_ext == ".py":
             symbols = self.python_extractor.extract(file_path)
-            language = 'python'
-        elif file_ext in ['.js', '.jsx']:
+            language = "python"
+        elif file_ext in [".js", ".jsx"]:
             symbols = self.javascript_extractor.extract(file_path)
-            language = 'javascript'
+            language = "javascript"
         else:
             logger.warning(f"Unsupported file type: {file_ext}")
             symbols = []
-            language = 'unknown'
+            language = "unknown"
 
         # 创建FileSymbols对象
         file_hash = ""

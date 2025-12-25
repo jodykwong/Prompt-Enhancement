@@ -71,10 +71,14 @@ class ProjectContext:
     framework_version: Optional[str] = None
 
     # Detected coding standards (from Story 2.5-2.9)
-    detected_standards: Dict[str, StandardsDetectionResult] = field(default_factory=dict)
+    detected_standards: Dict[str, StandardsDetectionResult] = field(
+        default_factory=dict
+    )
 
     # Project structure and organization
-    project_organization: Optional[str] = None  # "by-feature", "by-layer", "by-type", etc.
+    project_organization: Optional[str] = (
+        None  # "by-feature", "by-layer", "by-type", etc.
+    )
 
     # Git history context
     git_context: Optional[GitHistoryContext] = field(default_factory=GitHistoryContext)
@@ -116,14 +120,18 @@ class ProjectContext:
                 for k, v in self.detected_standards.items()
             },
             "project_organization": self.project_organization,
-            "git_context": {
-                "current_branch": self.git_context.current_branch,
-                "total_commits": self.git_context.total_commits,
-                "recent_commit_count": self.git_context.recent_commit_count,
-                "first_commit_date": self.git_context.first_commit_date,
-                "last_commit_date": self.git_context.last_commit_date,
-                "active_days": self.git_context.active_days,
-            } if self.git_context else None,
+            "git_context": (
+                {
+                    "current_branch": self.git_context.current_branch,
+                    "total_commits": self.git_context.total_commits,
+                    "recent_commit_count": self.git_context.recent_commit_count,
+                    "first_commit_date": self.git_context.first_commit_date,
+                    "last_commit_date": self.git_context.last_commit_date,
+                    "active_days": self.git_context.active_days,
+                }
+                if self.git_context
+                else None
+            ),
             "dependencies": [
                 {
                     "name": d.name,
@@ -135,14 +143,18 @@ class ProjectContext:
             "project_fingerprint": self.project_fingerprint,
             "user_overrides": self.user_overrides,
             "template_name": self.template_name,
-            "collection_metadata": {
-                "collected_at": self.collection_metadata.collected_at,
-                "collection_mode": self.collection_metadata.collection_mode,
-                "standards_confidence": self.collection_metadata.standards_confidence,
-                "fields_collected": self.collection_metadata.fields_collected,
-                "fields_skipped": self.collection_metadata.fields_skipped,
-                "warnings": self.collection_metadata.warnings,
-            } if self.collection_metadata else None,
+            "collection_metadata": (
+                {
+                    "collected_at": self.collection_metadata.collected_at,
+                    "collection_mode": self.collection_metadata.collection_mode,
+                    "standards_confidence": self.collection_metadata.standards_confidence,
+                    "fields_collected": self.collection_metadata.fields_collected,
+                    "fields_skipped": self.collection_metadata.fields_skipped,
+                    "warnings": self.collection_metadata.warnings,
+                }
+                if self.collection_metadata
+                else None
+            ),
         }
 
     def get_size_bytes(self) -> int:
@@ -153,4 +165,5 @@ class ProjectContext:
             Approximate size in bytes
         """
         import json
-        return len(json.dumps(self.to_dict()).encode('utf-8'))
+
+        return len(json.dumps(self.to_dict()).encode("utf-8"))

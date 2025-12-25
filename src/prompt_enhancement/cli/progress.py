@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class Phase(Enum):
     """Execution phase enumeration."""
+
     ANALYZING = "analyzing"
     ENHANCING = "enhancing"
     FORMATTING = "formatting"
@@ -25,12 +26,14 @@ class Phase(Enum):
 
 class ProgressError(Exception):
     """Exception raised during progress tracking."""
+
     pass
 
 
 @dataclass
 class ProgressState:
     """Current progress state snapshot."""
+
     phase: Phase
     elapsed_seconds: float
     estimated_remaining_seconds: Optional[float]
@@ -99,7 +102,7 @@ class ProgressTracker:
     def update_progress(
         self,
         percent: Optional[float] = None,
-        estimated_remaining_seconds: Optional[float] = None
+        estimated_remaining_seconds: Optional[float] = None,
     ) -> None:
         """
         Update progress for current phase.
@@ -121,7 +124,7 @@ class ProgressTracker:
         self,
         percent: Optional[float] = None,
         estimated_remaining_seconds: Optional[float] = None,
-        callback: Optional[Callable[[], None]] = None
+        callback: Optional[Callable[[], None]] = None,
     ) -> None:
         """
         Asynchronously update progress for current phase.
@@ -135,10 +138,7 @@ class ProgressTracker:
         """
         # Update progress in separate task to avoid blocking
         await asyncio.get_event_loop().run_in_executor(
-            None,
-            self.update_progress,
-            percent,
-            estimated_remaining_seconds
+            None, self.update_progress, percent, estimated_remaining_seconds
         )
 
         # Invoke callback if provided
@@ -157,7 +157,7 @@ class ProgressTracker:
         self,
         phase: Phase,
         error_description: str,
-        recovery_guidance: Optional[str] = None
+        recovery_guidance: Optional[str] = None,
     ) -> None:
         """
         Report an error during execution.
@@ -179,7 +179,9 @@ class ProgressTracker:
         if recovery_guidance:
             error_parts.append(f"   Recovery: {recovery_guidance}")
         elif phase in self.DEFAULT_RECOVERY_STRATEGIES:
-            error_parts.append(f"   Recovery: {self.DEFAULT_RECOVERY_STRATEGIES[phase]}")
+            error_parts.append(
+                f"   Recovery: {self.DEFAULT_RECOVERY_STRATEGIES[phase]}"
+            )
 
         self.error_message = "\n".join(error_parts)
 
@@ -205,7 +207,7 @@ class ProgressTracker:
             phase=self.current_phase,
             elapsed_seconds=self.elapsed_seconds,
             estimated_remaining_seconds=self.estimated_remaining_seconds,
-            message=message
+            message=message,
         )
 
     def _format_message(self) -> str:
@@ -272,7 +274,7 @@ class ProgressTracker:
         self,
         phase: Phase,
         error_description: str,
-        recovery_guidance: Optional[str] = None
+        recovery_guidance: Optional[str] = None,
     ) -> str:
         """
         Format error message (AC5).
@@ -299,9 +301,7 @@ class ProgressTracker:
         print(flush=True)
 
     def set_periodic_update_callback(
-        self,
-        callback: Optional[Callable[[], None]],
-        interval: float = 0.5
+        self, callback: Optional[Callable[[], None]], interval: float = 0.5
     ) -> None:
         """
         Register a callback for periodic progress updates.

@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 # Data Structures (Task 2.1.1)
 # ============================================================================
 
+
 class ProjectLanguage(Enum):
     """Supported programming languages."""
 
@@ -54,6 +55,7 @@ class ProjectTypeDetectionResult:
 # ProjectTypeDetector Class
 # ============================================================================
 
+
 class ProjectTypeDetector:
     """
     Detects project type and programming language from filesystem markers.
@@ -74,51 +76,64 @@ class ProjectTypeDetector:
     # Marker file definitions with priority and metadata extraction flag
     # Higher priority = preferred in multi-language detection
     PYTHON_MARKERS = {
-        'requirements.txt': {'priority': 10, 'metadata': False},
-        'pyproject.toml': {'priority': 9, 'metadata': True},
-        'setup.py': {'priority': 8, 'metadata': True},
-        'Pipfile': {'priority': 7, 'metadata': True},
-        'poetry.lock': {'priority': 5, 'metadata': False},
+        "requirements.txt": {"priority": 10, "metadata": False},
+        "pyproject.toml": {"priority": 9, "metadata": True},
+        "setup.py": {"priority": 8, "metadata": True},
+        "Pipfile": {"priority": 7, "metadata": True},
+        "poetry.lock": {"priority": 5, "metadata": False},
     }
 
     NODE_MARKERS = {
-        'package.json': {'priority': 10, 'metadata': True},
-        'package-lock.json': {'priority': 9, 'metadata': False},
-        'yarn.lock': {'priority': 9, 'metadata': False},
-        'pnpm-lock.yaml': {'priority': 8, 'metadata': False},
+        "package.json": {"priority": 10, "metadata": True},
+        "package-lock.json": {"priority": 9, "metadata": False},
+        "yarn.lock": {"priority": 9, "metadata": False},
+        "pnpm-lock.yaml": {"priority": 8, "metadata": False},
     }
 
     GO_MARKERS = {
-        'go.mod': {'priority': 10, 'metadata': True},
-        'go.sum': {'priority': 8, 'metadata': False},
+        "go.mod": {"priority": 10, "metadata": True},
+        "go.sum": {"priority": 8, "metadata": False},
     }
 
     RUST_MARKERS = {
-        'Cargo.toml': {'priority': 10, 'metadata': True},
-        'Cargo.lock': {'priority': 8, 'metadata': False},
+        "Cargo.toml": {"priority": 10, "metadata": True},
+        "Cargo.lock": {"priority": 8, "metadata": False},
     }
 
     JAVA_MARKERS = {
-        'pom.xml': {'priority': 10, 'metadata': True},
-        'build.gradle': {'priority': 10, 'metadata': True},
-        'settings.xml': {'priority': 8, 'metadata': False},
-        'gradle.properties': {'priority': 7, 'metadata': False},
+        "pom.xml": {"priority": 10, "metadata": True},
+        "build.gradle": {"priority": 10, "metadata": True},
+        "settings.xml": {"priority": 8, "metadata": False},
+        "gradle.properties": {"priority": 7, "metadata": False},
     }
 
     # C# markers - note .csproj and .sln are file extensions, not exact names
     CSHARP_MARKERS = {
-        'packages.config': {'priority': 8, 'metadata': False},
+        "packages.config": {"priority": 8, "metadata": False},
     }
-    CSHARP_EXTENSIONS = ['.csproj', '.sln']  # Extensions to check separately
+    CSHARP_EXTENSIONS = [".csproj", ".sln"]  # Extensions to check separately
 
     # Directories to skip during scanning
-    SKIP_DIRS = {'.git', '.venv', 'node_modules', '__pycache__', '.pytest_cache',
-                 'venv', 'env', '.env', 'build', 'dist', '.tox'}
+    SKIP_DIRS = {
+        ".git",
+        ".venv",
+        "node_modules",
+        "__pycache__",
+        ".pytest_cache",
+        "venv",
+        "env",
+        ".env",
+        "build",
+        "dist",
+        ".tox",
+    }
 
     # Timeout for detection (2-second budget from Story 1.4)
     DETECTION_TIMEOUT_SECONDS = 2.0
 
-    def __init__(self, project_root: Optional[str] = None, follow_symlinks: bool = False):
+    def __init__(
+        self, project_root: Optional[str] = None, follow_symlinks: bool = False
+    ):
         """
         Initialize ProjectTypeDetector.
 
@@ -168,7 +183,9 @@ class ProjectTypeDetector:
 
             # Determine primary and secondary languages (AC6 - Task 2.1.3)
             primary_lang = self._determine_primary_language(language_markers)
-            secondary_langs = self._determine_secondary_languages(language_markers, primary_lang)
+            secondary_langs = self._determine_secondary_languages(
+                language_markers, primary_lang
+            )
 
             # Extract version from config files (Task 2.1.4)
             version = self._extract_version(primary_lang, found_markers)
@@ -179,14 +196,18 @@ class ProjectTypeDetector:
             )
 
             # Get list of primary language markers
-            primary_markers = [m for m in found_markers if m in self._get_markers_for_language(primary_lang)]
+            primary_markers = [
+                m
+                for m in found_markers
+                if m in self._get_markers_for_language(primary_lang)
+            ]
 
             return ProjectTypeDetectionResult(
                 primary_language=primary_lang,
                 version=version,
                 confidence=confidence,
                 markers_found=primary_markers,
-                secondary_languages=secondary_langs
+                secondary_languages=secondary_langs,
             )
 
         except Exception as e:
@@ -220,8 +241,14 @@ class ProjectTypeDetector:
 
         # Get all marker filenames to check
         all_markers = set()
-        for markers in [self.PYTHON_MARKERS, self.NODE_MARKERS, self.GO_MARKERS,
-                        self.RUST_MARKERS, self.JAVA_MARKERS, self.CSHARP_MARKERS]:
+        for markers in [
+            self.PYTHON_MARKERS,
+            self.NODE_MARKERS,
+            self.GO_MARKERS,
+            self.RUST_MARKERS,
+            self.JAVA_MARKERS,
+            self.CSHARP_MARKERS,
+        ]:
             all_markers.update(markers.keys())
 
         # Check for exact filename matches (no recursion)
@@ -232,7 +259,7 @@ class ProjectTypeDetector:
                     break
 
                 # Skip hidden items (except .csproj, .sln files)
-                if item.name.startswith('.'):
+                if item.name.startswith("."):
                     continue
                 if item.name in self.SKIP_DIRS:
                     continue
@@ -277,7 +304,9 @@ class ProjectTypeDetector:
     # Task 2.1.3: Language Detection and Classification
     # ========================================================================
 
-    def _classify_markers(self, found_markers: List[str]) -> Dict[ProjectLanguage, List[str]]:
+    def _classify_markers(
+        self, found_markers: List[str]
+    ) -> Dict[ProjectLanguage, List[str]]:
         """
         Classify found markers by language.
 
@@ -316,15 +345,18 @@ class ProjectTypeDetector:
                 language_markers[ProjectLanguage.JAVA].append(marker)
 
             # Check C# by markers or extensions
-            elif marker in self.CSHARP_MARKERS or any(marker.endswith(ext) for ext in self.CSHARP_EXTENSIONS):
+            elif marker in self.CSHARP_MARKERS or any(
+                marker.endswith(ext) for ext in self.CSHARP_EXTENSIONS
+            ):
                 if ProjectLanguage.CSHARP not in language_markers:
                     language_markers[ProjectLanguage.CSHARP] = []
                 language_markers[ProjectLanguage.CSHARP].append(marker)
 
         return language_markers
 
-    def _determine_primary_language(self,
-                                    language_markers: Dict[ProjectLanguage, List[str]]) -> ProjectLanguage:
+    def _determine_primary_language(
+        self, language_markers: Dict[ProjectLanguage, List[str]]
+    ) -> ProjectLanguage:
         """
         Determine primary language from detected markers.
 
@@ -352,9 +384,11 @@ class ProjectTypeDetector:
         primary = max(language_percentages, key=language_percentages.get)
         return primary
 
-    def _determine_secondary_languages(self,
-                                      language_markers: Dict[ProjectLanguage, List[str]],
-                                      primary: ProjectLanguage) -> List[ProjectLanguage]:
+    def _determine_secondary_languages(
+        self,
+        language_markers: Dict[ProjectLanguage, List[str]],
+        primary: ProjectLanguage,
+    ) -> List[ProjectLanguage]:
         """
         Determine secondary languages in mixed-language project.
 
@@ -391,7 +425,9 @@ class ProjectTypeDetector:
     # Task 2.1.4: Version Extraction
     # ========================================================================
 
-    def _extract_version(self, language: ProjectLanguage, markers: List[str]) -> Optional[str]:
+    def _extract_version(
+        self, language: ProjectLanguage, markers: List[str]
+    ) -> Optional[str]:
         """
         Extract version information for detected language.
 
@@ -433,28 +469,28 @@ class ProjectTypeDetector:
             return None
 
         # Try pyproject.toml first
-        if 'pyproject.toml' in markers:
+        if "pyproject.toml" in markers:
             try:
-                content = self._read_file_safe('pyproject.toml', lines=50)
+                content = self._read_file_safe("pyproject.toml", lines=50)
                 # Look for requires-python = ">=3.9" or similar
                 match = re.search(r'requires-python\s*=\s*["\']([^"\']+)["\']', content)
                 if match:
                     version_str = match.group(1)
                     # Extract version from >=3.9 format
-                    match = re.search(r'\d+\.\d+', version_str)
+                    match = re.search(r"\d+\.\d+", version_str)
                     if match:
                         return match.group(0)
             except Exception as e:
                 logger.debug(f"Error extracting version from pyproject.toml: {e}")
 
         # Try setup.py
-        if 'setup.py' in markers:
+        if "setup.py" in markers:
             try:
-                content = self._read_file_safe('setup.py', lines=50)
+                content = self._read_file_safe("setup.py", lines=50)
                 match = re.search(r'python_requires\s*=\s*["\']([^"\']+)["\']', content)
                 if match:
                     version_str = match.group(1)
-                    match = re.search(r'\d+\.\d+', version_str)
+                    match = re.search(r"\d+\.\d+", version_str)
                     if match:
                         return match.group(0)
             except Exception as e:
@@ -475,18 +511,18 @@ class ProjectTypeDetector:
         if self._is_timeout():
             return None
 
-        if 'package.json' not in markers:
+        if "package.json" not in markers:
             return None
 
         try:
-            content = self._read_file_safe('package.json', lines=100)
+            content = self._read_file_safe("package.json", lines=100)
             data = json.loads(content)
 
             # Look for engines.node field
-            if 'engines' in data and 'node' in data['engines']:
-                version_str = data['engines']['node']
+            if "engines" in data and "node" in data["engines"]:
+                version_str = data["engines"]["node"]
                 # Extract version from >=14.0.0 format
-                match = re.search(r'\d+', version_str)
+                match = re.search(r"\d+", version_str)
                 if match:
                     return match.group(0)
 
@@ -510,15 +546,15 @@ class ProjectTypeDetector:
         if self._is_timeout():
             return None
 
-        if 'go.mod' not in markers:
+        if "go.mod" not in markers:
             return None
 
         try:
-            content = self._read_file_safe('go.mod', lines=5)
-            lines = content.strip().split('\n')
+            content = self._read_file_safe("go.mod", lines=5)
+            lines = content.strip().split("\n")
             for line in lines:
-                if line.startswith('go '):
-                    version = line.replace('go ', '').strip()
+                if line.startswith("go "):
+                    version = line.replace("go ", "").strip()
                     return version
             return None
         except Exception as e:
@@ -538,11 +574,11 @@ class ProjectTypeDetector:
         if self._is_timeout():
             return None
 
-        if 'Cargo.toml' not in markers:
+        if "Cargo.toml" not in markers:
             return None
 
         try:
-            content = self._read_file_safe('Cargo.toml', lines=50)
+            content = self._read_file_safe("Cargo.toml", lines=50)
             # Look for edition = "2021" in [package] section
             match = re.search(r'edition\s*=\s*["\'](\d+)["\']', content)
             if match:
@@ -566,25 +602,27 @@ class ProjectTypeDetector:
             return None
 
         # Try pom.xml
-        if 'pom.xml' in markers:
+        if "pom.xml" in markers:
             try:
-                content = self._read_file_safe('pom.xml', lines=100)
+                content = self._read_file_safe("pom.xml", lines=100)
                 # Look for <source>11</source> or <target>11</target>
-                match = re.search(r'<source>(\d+)</source>', content)
+                match = re.search(r"<source>(\d+)</source>", content)
                 if match:
                     return match.group(1)
-                match = re.search(r'<target>(\d+)</target>', content)
+                match = re.search(r"<target>(\d+)</target>", content)
                 if match:
                     return match.group(1)
             except Exception as e:
                 logger.debug(f"Error extracting version from pom.xml: {e}")
 
         # Try build.gradle
-        if 'build.gradle' in markers:
+        if "build.gradle" in markers:
             try:
-                content = self._read_file_safe('build.gradle', lines=100)
+                content = self._read_file_safe("build.gradle", lines=100)
                 # Look for sourceCompatibility = '11' or sourceCompatibility = JavaVersion.VERSION_11
-                match = re.search(r"sourceCompatibility\s*=\s*['\"]?(\d+)['\"]?", content)
+                match = re.search(
+                    r"sourceCompatibility\s*=\s*['\"]?(\d+)['\"]?", content
+                )
                 if match:
                     return match.group(1)
             except Exception as e:
@@ -606,14 +644,14 @@ class ProjectTypeDetector:
             return None
 
         # Look for any .csproj file
-        csproj_file = next((m for m in markers if m.endswith('.csproj')), None)
+        csproj_file = next((m for m in markers if m.endswith(".csproj")), None)
         if not csproj_file:
             return None
 
         try:
             content = self._read_file_safe(csproj_file, lines=50)
             # Look for <TargetFramework>net6.0</TargetFramework>
-            match = re.search(r'<TargetFramework>([^<]+)</TargetFramework>', content)
+            match = re.search(r"<TargetFramework>([^<]+)</TargetFramework>", content)
             if match:
                 return match.group(1)
             return None
@@ -625,11 +663,13 @@ class ProjectTypeDetector:
     # Task 2.1.3: Confidence Scoring
     # ========================================================================
 
-    def _calculate_confidence(self,
-                             language: ProjectLanguage,
-                             markers: List[str],
-                             version: Optional[str],
-                             language_markers: Dict[ProjectLanguage, List[str]]) -> float:
+    def _calculate_confidence(
+        self,
+        language: ProjectLanguage,
+        markers: List[str],
+        version: Optional[str],
+        language_markers: Dict[ProjectLanguage, List[str]],
+    ) -> float:
         """
         Calculate confidence score for language detection.
 
@@ -660,8 +700,10 @@ class ProjectTypeDetector:
 
         # Calculate priority score bonus (up to 0.3)
         marker_defs = self._get_markers_for_language(language)
-        total_priority = sum(marker_defs[m]['priority'] for m in lang_markers if m in marker_defs)
-        max_priority = sum(info['priority'] for info in marker_defs.values())
+        total_priority = sum(
+            marker_defs[m]["priority"] for m in lang_markers if m in marker_defs
+        )
+        max_priority = sum(info["priority"] for info in marker_defs.values())
 
         if max_priority > 0:
             priority_score = (total_priority / max_priority) * 0.3
@@ -688,7 +730,9 @@ class ProjectTypeDetector:
     # Helper Methods
     # ========================================================================
 
-    def _read_file_safe(self, filename: str, lines: int = 100, encoding: str = 'utf-8') -> str:
+    def _read_file_safe(
+        self, filename: str, lines: int = 100, encoding: str = "utf-8"
+    ) -> str:
         """
         Read file safely with encoding fallback.
 
@@ -720,9 +764,9 @@ class ProjectTypeDetector:
             raise
 
         try:
-            with open(filepath, 'r', encoding=encoding) as f:
+            with open(filepath, "r", encoding=encoding) as f:
                 # Read up to specified number of lines
-                content = ''
+                content = ""
                 for i, line in enumerate(f):
                     if i >= lines:
                         break
@@ -732,8 +776,8 @@ class ProjectTypeDetector:
         except UnicodeDecodeError:
             # Fallback to latin-1 (more permissive)
             try:
-                with open(filepath, 'r', encoding='latin-1') as f:
-                    content = ''
+                with open(filepath, "r", encoding="latin-1") as f:
+                    content = ""
                     for i, line in enumerate(f):
                         if i >= lines:
                             break
@@ -743,7 +787,9 @@ class ProjectTypeDetector:
                 logger.debug(f"Error reading {filename} even with latin-1: {e}")
                 raise
 
-    def _get_markers_for_language(self, language: ProjectLanguage) -> Dict[str, Dict[str, Any]]:
+    def _get_markers_for_language(
+        self, language: ProjectLanguage
+    ) -> Dict[str, Dict[str, Any]]:
         """
         Get marker definitions for a language.
 

@@ -26,6 +26,7 @@ except ImportError:
 
 class OrganizationType(str, Enum):
     """Types of project organization"""
+
     MONOREPO = "monorepo"
     SINGLE_REPO = "single_repo"
     UNKNOWN = "unknown"
@@ -34,6 +35,7 @@ class OrganizationType(str, Enum):
 @dataclass
 class OrganizationPattern:
     """Single organization pattern detection"""
+
     name: str
     pattern_type: str
     confidence: float
@@ -44,6 +46,7 @@ class OrganizationPattern:
 @dataclass
 class DirectoryMetrics:
     """Directory structure metrics"""
+
     max_depth: int = 0
     avg_depth: float = 0.0
     max_fanout: int = 0
@@ -56,6 +59,7 @@ class DirectoryMetrics:
 @dataclass
 class CodeOrganizationResult:
     """Result of code organization pattern detection"""
+
     primary_type: Optional[OrganizationType] = None
     detected_patterns: List[OrganizationPattern] = field(default_factory=list)
     confidence: float = 0.0
@@ -124,7 +128,7 @@ class CodeOrganizationDetector:
     def __init__(
         self,
         timeout_sec: float = 1.5,
-        performance_tracker: Optional['PerformanceTracker'] = None,
+        performance_tracker: Optional["PerformanceTracker"] = None,
         file_access_handler: Optional[FileAccessHandler] = None,
     ):
         """Initialize detector with Story 1.4 and 2.10 integration"""
@@ -137,7 +141,7 @@ class CodeOrganizationDetector:
         self,
         tech_result: ProjectTypeDetectionResult,
         files_result: ProjectIndicatorResult,
-        project_root: str = "."
+        project_root: str = ".",
     ) -> Optional[CodeOrganizationResult]:
         """
         Detect code organization patterns used in project.
@@ -176,7 +180,9 @@ class CodeOrganizationDetector:
 
         # Detect module boundaries
         if org_type == OrganizationType.MONOREPO:
-            module_info = self._detect_module_boundaries(dir_tree, project_root, tech_result)
+            module_info = self._detect_module_boundaries(
+                dir_tree, project_root, tech_result
+            )
             result.module_count = len(module_info["names"])
             result.module_names = module_info["names"]
 
@@ -200,23 +206,35 @@ class CodeOrganizationDetector:
 
         try:
             # FIX MEDIUM #7: Add followlinks=False to prevent symlink loops
-            for root, dirs, files in os.walk(project_root, topdown=True, followlinks=False):
+            for root, dirs, files in os.walk(
+                project_root, topdown=True, followlinks=False
+            ):
                 # FIX HIGH #4: Check timeout in os.walk loop
                 if self.start_time and (time.time() - self.start_time > self.timeout):
                     break
 
                 # Limit depth
-                depth = root[len(project_root):].count(os.sep)
+                depth = root[len(project_root) :].count(os.sep)
                 if depth > max_depth:
                     dirs[:] = []
                     continue
 
                 # Skip hidden and vendor directories
                 dirs[:] = [
-                    d for d in dirs
-                    if not d.startswith(".") and d not in [
-                        "node_modules", "vendor", "__pycache__", ".git",
-                        ".venv", "venv", "dist", "build", "target"
+                    d
+                    for d in dirs
+                    if not d.startswith(".")
+                    and d
+                    not in [
+                        "node_modules",
+                        "vendor",
+                        "__pycache__",
+                        ".git",
+                        ".venv",
+                        "venv",
+                        "dist",
+                        "build",
+                        "target",
                     ]
                 ]
 
@@ -244,10 +262,7 @@ class CodeOrganizationDetector:
         return tree
 
     def _detect_organization_type(
-        self,
-        dir_tree: Dict,
-        project_root: str,
-        tech_result: ProjectTypeDetectionResult
+        self, dir_tree: Dict, project_root: str, tech_result: ProjectTypeDetectionResult
     ) -> tuple:
         """Detect monorepo vs single-repo"""
         # Check for monorepo indicators
@@ -272,7 +287,7 @@ class CodeOrganizationDetector:
                     return OrganizationType.SINGLE_REPO, 0.5
                 try:
                     pkg_path = Path(project_root) / "package.json"
-                    with open(pkg_path, 'r') as f:
+                    with open(pkg_path, "r") as f:
                         pkg_data = json.load(f)
                         if "workspaces" in pkg_data:
                             monorepo_score += 2
@@ -287,7 +302,7 @@ class CodeOrganizationDetector:
                     return OrganizationType.SINGLE_REPO, 0.5
                 try:
                     pom_path = Path(project_root) / "pom.xml"
-                    with open(pom_path, 'r') as f:
+                    with open(pom_path, "r") as f:
                         content = f.read()
                         if "<modules>" in content or "<module>" in content:
                             monorepo_score += 2
@@ -319,9 +334,7 @@ class CodeOrganizationDetector:
             return OrganizationType.SINGLE_REPO, 0.8
 
     def _detect_directory_patterns(
-        self,
-        dir_tree: Dict,
-        tech_result: ProjectTypeDetectionResult
+        self, dir_tree: Dict, tech_result: ProjectTypeDetectionResult
     ) -> List[OrganizationPattern]:
         """Detect common directory patterns"""
         patterns = []
@@ -356,13 +369,15 @@ class CodeOrganizationDetector:
             elif pattern_name in self.TEST_PATTERN_DIRS:
                 description = self.TEST_PATTERN_DIRS[pattern_name]
 
-            patterns.append(OrganizationPattern(
-                name=pattern_name,
-                pattern_type="directory",
-                confidence=confidence,
-                description=description,
-                frequency=freq
-            ))
+            patterns.append(
+                OrganizationPattern(
+                    name=pattern_name,
+                    pattern_type="directory",
+                    confidence=confidence,
+                    description=description,
+                    frequency=freq,
+                )
+            )
 
         # Sort by frequency
         patterns.sort(key=lambda p: p.frequency, reverse=True)
@@ -370,10 +385,7 @@ class CodeOrganizationDetector:
         return patterns
 
     def _detect_module_boundaries(
-        self,
-        dir_tree: Dict,
-        project_root: str,
-        tech_result: ProjectTypeDetectionResult
+        self, dir_tree: Dict, project_root: str, tech_result: ProjectTypeDetectionResult
     ) -> Dict:
         """Detect module/package boundaries in monorepo"""
         module_names = []
@@ -399,7 +411,7 @@ class CodeOrganizationDetector:
                 return {"names": module_names}
             try:
                 pkg_path = Path(project_root) / "package.json"
-                with open(pkg_path, 'r') as f:
+                with open(pkg_path, "r") as f:
                     pkg_data = json.load(f)
                     workspaces = pkg_data.get("workspaces", [])
                     for ws in workspaces:
@@ -466,10 +478,17 @@ class CodeOrganizationDetector:
 
         # Look for common config files
         config_patterns = [
-            ".eslintrc*", ".prettierrc*", "tsconfig*.json",
-            "jest.config*", "webpack.config*", ".env*",
-            "pytest.ini", "setup.cfg", "pyproject.toml",
-            "gradle.properties", "maven.properties"
+            ".eslintrc*",
+            ".prettierrc*",
+            "tsconfig*.json",
+            "jest.config*",
+            "webpack.config*",
+            ".env*",
+            "pytest.ini",
+            "setup.cfg",
+            "pyproject.toml",
+            "gradle.properties",
+            "maven.properties",
         ]
 
         # Check root level
@@ -508,7 +527,9 @@ class CodeOrganizationDetector:
             if result.metrics.is_flat:
                 notes.append("Flat directory structure")
             elif result.metrics.is_hierarchical:
-                notes.append(f"Hierarchical structure (depth: {result.metrics.max_depth})")
+                notes.append(
+                    f"Hierarchical structure (depth: {result.metrics.max_depth})"
+                )
 
         if result.detected_patterns:
             pattern_names = [p.name for p in result.detected_patterns[:3]]

@@ -81,7 +81,9 @@ class ProjectContextCollector:
 
         # Collect Git history
         if analysis_result and "git_history" in analysis_result:
-            context.git_context = self._extract_git_context(analysis_result["git_history"])
+            context.git_context = self._extract_git_context(
+                analysis_result["git_history"]
+            )
 
         # Collect dependencies
         if analysis_result and "indicator_files" in analysis_result:
@@ -130,7 +132,9 @@ class ProjectContextCollector:
 
         return "unknown"
 
-    def _extract_framework(self, analysis_result: Optional[Dict[str, Any]]) -> Optional[str]:
+    def _extract_framework(
+        self, analysis_result: Optional[Dict[str, Any]]
+    ) -> Optional[str]:
         """Extract framework information."""
         if analysis_result and "tech_stack" in analysis_result:
             try:
@@ -150,7 +154,10 @@ class ProjectContextCollector:
         if analysis_result and "tech_stack" in analysis_result:
             try:
                 tech_stack = analysis_result["tech_stack"]
-                if hasattr(tech_stack, "framework_versions") and tech_stack.framework_versions:
+                if (
+                    hasattr(tech_stack, "framework_versions")
+                    and tech_stack.framework_versions
+                ):
                     return tech_stack.framework_versions.get("primary")
             except Exception as e:
                 logger.warning(f"Error extracting framework version: {e}")
@@ -165,6 +172,7 @@ class ProjectContextCollector:
         # Generate simple fingerprint if not provided
         try:
             import hashlib
+
             files = list(self.project_root.glob("**/*.py"))[:100]
             file_str = "".join(str(f) for f in sorted(files))
             return hashlib.md5(file_str.encode()).hexdigest()
@@ -172,7 +180,9 @@ class ProjectContextCollector:
             logger.warning(f"Error generating fingerprint: {e}")
             return "unknown"
 
-    def _extract_standards(self, confidence_report: Optional[Any]) -> Dict[str, StandardsDetectionResult]:
+    def _extract_standards(
+        self, confidence_report: Optional[Any]
+    ) -> Dict[str, StandardsDetectionResult]:
         """
         Extract detected standards from confidence report.
 
@@ -193,21 +203,32 @@ class ProjectContextCollector:
             )
 
             for standard_name, standard_data in report_dict.items():
-                if standard_name in ["naming_convention", "test_framework", "documentation_style",
-                                    "code_organization", "module_naming"]:
+                if standard_name in [
+                    "naming_convention",
+                    "test_framework",
+                    "documentation_style",
+                    "code_organization",
+                    "module_naming",
+                ]:
                     try:
                         result = StandardsDetectionResult(
                             standard_name=standard_name,
-                            detected_value=standard_data.get("detected_value", "unknown"),
+                            detected_value=standard_data.get(
+                                "detected_value", "unknown"
+                            ),
                             confidence=float(standard_data.get("confidence", 0.0)),
                             sample_size=int(standard_data.get("sample_size", 0)),
                             evidence=standard_data.get("evidence", []),
                             exceptions=standard_data.get("exceptions"),
                         )
                         standards[standard_name] = result
-                        logger.debug(f"Extracted standard: {standard_name} ({result.confidence:.0%})")
+                        logger.debug(
+                            f"Extracted standard: {standard_name} ({result.confidence:.0%})"
+                        )
                     except Exception as e:
-                        logger.warning(f"Error extracting standard {standard_name}: {e}")
+                        logger.warning(
+                            f"Error extracting standard {standard_name}: {e}"
+                        )
 
         except Exception as e:
             logger.warning(f"Error extracting standards: {e}")
@@ -284,7 +305,9 @@ class ProjectContextCollector:
             return "cargo"
         return None
 
-    def _extract_project_organization(self, confidence_report: Optional[Any]) -> Optional[str]:
+    def _extract_project_organization(
+        self, confidence_report: Optional[Any]
+    ) -> Optional[str]:
         """Extract project organization pattern."""
         try:
             report_dict = (
@@ -354,7 +377,9 @@ class ProjectContextCollector:
             warnings=self._generate_warnings(context, collection_mode),
         )
 
-    def _generate_warnings(self, context: ProjectContext, collection_mode: str) -> List[str]:
+    def _generate_warnings(
+        self, context: ProjectContext, collection_mode: str
+    ) -> List[str]:
         """Generate warnings about collection issues."""
         warnings = []
 
@@ -368,7 +393,9 @@ class ProjectContextCollector:
 
         # Check if collection mode is degraded
         if collection_mode in ["partial", "minimal"]:
-            warnings.append(f"Collection mode is {collection_mode} - some context unavailable")
+            warnings.append(
+                f"Collection mode is {collection_mode} - some context unavailable"
+            )
 
         return warnings
 
@@ -403,11 +430,11 @@ class ProjectContextCollector:
             Dictionary representation of symbol
         """
         return {
-            'name': symbol.name,
-            'type': symbol.symbol_type,
-            'signature': symbol.signature,
-            'line': symbol.line_number,
-            'parent_class': symbol.parent_class,
-            'decorators': symbol.decorators if symbol.decorators else [],
-            'docstring': symbol.docstring,
+            "name": symbol.name,
+            "type": symbol.symbol_type,
+            "signature": symbol.signature,
+            "line": symbol.line_number,
+            "parent_class": symbol.parent_class,
+            "decorators": symbol.decorators if symbol.decorators else [],
+            "docstring": symbol.docstring,
         }

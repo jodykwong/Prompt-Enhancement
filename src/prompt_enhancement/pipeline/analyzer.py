@@ -68,6 +68,7 @@ class ProjectAnalyzer:
             ProjectAnalysisResult with detection results
         """
         import time
+
         start_time = time.perf_counter()
 
         result = ProjectAnalysisResult()
@@ -90,8 +91,7 @@ class ProjectAnalyzer:
             logger.info("Extracting project metadata from indicator files...")
             if result.tech_stack:
                 indicator_detector = ProjectIndicatorFilesDetector(
-                    str(self.project_root),
-                    result.tech_stack.primary_language
+                    str(self.project_root), result.tech_stack.primary_language
                 )
                 result.indicator_files = indicator_detector.extract_project_metadata()
 
@@ -107,13 +107,17 @@ class ProjectAnalyzer:
                             f"dependencies={len(meta.dependencies)}"
                         )
                 else:
-                    logger.warning("Could not extract project metadata from indicator files")
+                    logger.warning(
+                        "Could not extract project metadata from indicator files"
+                    )
 
             # Phase P0.2: Git history analysis (Story 2.3)
             logger.info("Extracting Git history and development patterns...")
             git_detector = GitHistoryDetector(
                 project_root=self.project_root,
-                detected_language=result.tech_stack.primary_language if result.tech_stack else None
+                detected_language=(
+                    result.tech_stack.primary_language if result.tech_stack else None
+                ),
             )
             result.git_history = git_detector.extract_git_history()
 
@@ -130,9 +134,15 @@ class ProjectAnalyzer:
 
             # Phase P0.3: Confidence aggregation (Story 2.9)
             logger.info("Aggregating confidence scores...")
-            tech_confidence = result.tech_stack.confidence if result.tech_stack else None
-            indicator_confidence = result.indicator_files.confidence if result.indicator_files else None
-            git_confidence = result.git_history.confidence if result.git_history else None
+            tech_confidence = (
+                result.tech_stack.confidence if result.tech_stack else None
+            )
+            indicator_confidence = (
+                result.indicator_files.confidence if result.indicator_files else None
+            )
+            git_confidence = (
+                result.git_history.confidence if result.git_history else None
+            )
 
             result.confidence_report = self.confidence_aggregator.aggregate_confidence(
                 project_type_confidence=tech_confidence,

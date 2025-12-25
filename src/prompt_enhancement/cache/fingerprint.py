@@ -160,15 +160,23 @@ class FingerprintGenerator:
             package_files_hash = self._hash_package_files(files_result)
             lock_files_hash = self._hash_lock_files(files_result)
             git_metadata_hash = self._hash_git_metadata(git_result)
-            language_version_hash = self._hash_language_version(tech_result, files_result)
+            language_version_hash = self._hash_language_version(
+                tech_result, files_result
+            )
 
             # Combine all hashes
             combined_data = f"{package_files_hash}|{lock_files_hash}|{git_metadata_hash}|{language_version_hash}"
             total_hash = hashlib.sha256(combined_data.encode("utf-8")).hexdigest()
 
             # Count files (FIX MEDIUM #4: Include both package files and lock files)
-            package_file_count = len(files_result.files_found) if files_result.files_found else 0
-            lock_file_count = len(files_result.lock_files_present) if files_result.lock_files_present else 0
+            package_file_count = (
+                len(files_result.files_found) if files_result.files_found else 0
+            )
+            lock_file_count = (
+                len(files_result.lock_files_present)
+                if files_result.lock_files_present
+                else 0
+            )
             file_count = package_file_count + lock_file_count
 
             # Create components
@@ -387,12 +395,16 @@ class FingerprintGenerator:
 
             # Secondary languages
             if tech_result and tech_result.secondary_languages:
-                secondary = ",".join(lang.value for lang in tech_result.secondary_languages)
+                secondary = ",".join(
+                    lang.value for lang in tech_result.secondary_languages
+                )
                 language_parts.append(f"secondary:{secondary}")
 
             # Package manager
             if files_result and files_result.metadata:
-                language_parts.append(f"manager:{files_result.metadata.package_manager or 'unknown'}")
+                language_parts.append(
+                    f"manager:{files_result.metadata.package_manager or 'unknown'}"
+                )
 
             if not language_parts:
                 return hashlib.sha256(b"no-language-info").hexdigest()
@@ -451,7 +463,9 @@ class FingerprintGenerator:
             ttl_delta = timedelta(hours=ttl_hours)
 
             if cache_age > ttl_delta:
-                logger.debug(f"Cache invalid: TTL expired ({cache_age.total_seconds():.1f}s > {ttl_delta.total_seconds():.1f}s)")
+                logger.debug(
+                    f"Cache invalid: TTL expired ({cache_age.total_seconds():.1f}s > {ttl_delta.total_seconds():.1f}s)"
+                )
                 return False
 
             logger.debug("Cache valid: fingerprint match and TTL OK")

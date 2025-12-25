@@ -41,10 +41,14 @@ class AgentsWriter:
             backup_dir: Optional directory for backups (default: .agents_backup)
         """
         self.project_root = Path(project_root)
-        self.backup_dir = Path(backup_dir) if backup_dir else self.project_root / ".agents_backup"
+        self.backup_dir = (
+            Path(backup_dir) if backup_dir else self.project_root / ".agents_backup"
+        )
         self.agents_file = self.project_root / "AGENTS.md"
 
-    def write_agents_md(self, content: str, backup_existing: bool = True) -> Tuple[bool, str]:
+    def write_agents_md(
+        self, content: str, backup_existing: bool = True
+    ) -> Tuple[bool, str]:
         """
         Write AGENTS.md to project root.
 
@@ -76,7 +80,9 @@ class AgentsWriter:
             logger.error(f"Failed to write AGENTS.md: {e}")
             return False, f"Error writing AGENTS.md: {str(e)}"
 
-    def restore_from_backup(self, backup_timestamp: Optional[str] = None) -> Tuple[bool, str]:
+    def restore_from_backup(
+        self, backup_timestamp: Optional[str] = None
+    ) -> Tuple[bool, str]:
         """
         Restore AGENTS.md from a backup.
 
@@ -99,7 +105,9 @@ class AgentsWriter:
 
             if backup_timestamp:
                 # Look for specific backup
-                specific_backup = self.backup_dir / f"AGENTS.md.backup_{backup_timestamp}"
+                specific_backup = (
+                    self.backup_dir / f"AGENTS.md.backup_{backup_timestamp}"
+                )
                 if not specific_backup.exists():
                     return False, f"Backup {backup_timestamp} not found"
                 backup_path = specific_backup
@@ -178,7 +186,8 @@ class AgentsWriter:
         # Check for required sections
         required_sections = ["Setup", "Commands", "Code", "Boundaries"]
         missing_sections = [
-            section for section in required_sections
+            section
+            for section in required_sections
             if section.lower() not in content.lower()
         ]
 
@@ -211,17 +220,19 @@ class AgentsWriter:
         backup_files = sorted(
             self.backup_dir.glob("AGENTS.md.backup_*"),
             key=lambda p: p.stat().st_mtime,
-            reverse=True
+            reverse=True,
         )
 
         for backup_path in backup_files:
             stat = backup_path.stat()
             timestamp = datetime.fromtimestamp(stat.st_mtime)
-            backups.append({
-                "path": str(backup_path),
-                "timestamp": timestamp.isoformat(),
-                "size": stat.st_size,
-            })
+            backups.append(
+                {
+                    "path": str(backup_path),
+                    "timestamp": timestamp.isoformat(),
+                    "size": stat.st_size,
+                }
+            )
 
         return backups
 
@@ -242,7 +253,7 @@ class AgentsWriter:
             backup_files = sorted(
                 self.backup_dir.glob("AGENTS.md.backup_*"),
                 key=lambda p: p.stat().st_mtime,
-                reverse=True
+                reverse=True,
             )
 
             deleted_count = 0
@@ -279,19 +290,25 @@ class AgentsWriter:
         if self.agents_file.exists():
             stat = self.agents_file.stat()
             summary_lines.append(f"File Size: {stat.st_size} bytes")
-            summary_lines.append(f"Last Modified: {datetime.fromtimestamp(stat.st_mtime).isoformat()}")
+            summary_lines.append(
+                f"Last Modified: {datetime.fromtimestamp(stat.st_mtime).isoformat()}"
+            )
 
         backups = self.get_backup_history()
-        summary_lines.extend([
-            f"",
-            f"Backup Directory: {self.backup_dir}",
-            f"Total Backups: {len(backups)}",
-        ])
+        summary_lines.extend(
+            [
+                f"",
+                f"Backup Directory: {self.backup_dir}",
+                f"Total Backups: {len(backups)}",
+            ]
+        )
 
         if backups:
             summary_lines.append("Recent Backups:")
             for backup in backups[:3]:
-                summary_lines.append(f"  - {backup['timestamp']} ({backup['size']} bytes)")
+                summary_lines.append(
+                    f"  - {backup['timestamp']} ({backup['size']} bytes)"
+                )
 
         summary_lines.append("=" * 60)
 

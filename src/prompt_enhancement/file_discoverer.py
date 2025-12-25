@@ -24,10 +24,11 @@ logger = logging.getLogger(__name__)
 @dataclass
 class FoundFile:
     """发现的相关文件"""
-    path: str                          # 文件路径
-    relevance_score: float            # 相关性评分 (0-1)
-    match_type: str                   # 匹配类型: filename/content/dependency
-    matched_keywords: List[str]       # 匹配到的关键词
+
+    path: str  # 文件路径
+    relevance_score: float  # 相关性评分 (0-1)
+    match_type: str  # 匹配类型: filename/content/dependency
+    matched_keywords: List[str]  # 匹配到的关键词
 
     def __lt__(self, other):
         """按相关性评分倒序排序"""
@@ -61,18 +62,60 @@ class KeywordExtractor:
 
     # 编程相关的常用词汇
     PROGRAMMING_KEYWORDS = {
-        '认证', '授权', 'auth', 'authentication', 'login', '登录',
-        '用户', 'user', 'profile', '个人资料',
-        '数据库', 'database', 'db', 'sql', '数据',
-        '缓存', 'cache', 'redis', 'memcache',
-        '日志', 'log', 'logger', 'logging',
-        '错误', 'error', 'exception', 'bug', '修复',
-        '测试', 'test', 'pytest', 'unittest', '覆盖率',
-        '性能', 'performance', 'optimize', '优化',
-        '安全', 'security', 'encrypt', '加密',
-        'API', 'endpoint', 'route', '路由', 'controller',
-        '模型', 'model', 'schema', 'dto',
-        '配置', 'config', 'settings', 'env',
+        "认证",
+        "授权",
+        "auth",
+        "authentication",
+        "login",
+        "登录",
+        "用户",
+        "user",
+        "profile",
+        "个人资料",
+        "数据库",
+        "database",
+        "db",
+        "sql",
+        "数据",
+        "缓存",
+        "cache",
+        "redis",
+        "memcache",
+        "日志",
+        "log",
+        "logger",
+        "logging",
+        "错误",
+        "error",
+        "exception",
+        "bug",
+        "修复",
+        "测试",
+        "test",
+        "pytest",
+        "unittest",
+        "覆盖率",
+        "性能",
+        "performance",
+        "optimize",
+        "优化",
+        "安全",
+        "security",
+        "encrypt",
+        "加密",
+        "API",
+        "endpoint",
+        "route",
+        "路由",
+        "controller",
+        "模型",
+        "model",
+        "schema",
+        "dto",
+        "配置",
+        "config",
+        "settings",
+        "env",
     }
 
     def __init__(self) -> None:
@@ -81,10 +124,43 @@ class KeywordExtractor:
         停用词用于过滤常见的虚词和非编程词汇，提高提取准确性。
         """
         self.stop_words = {
-            '的', '是', '了', '和', '在', '有', '一', '个', '中', '为',
-            '给', '到', '把', '被', '从', '对', '可以', '要', '就', '也',
-            '很', '不', '没有', '这', '那', '什么', '怎么', '谁', '何时',
-            '是否', '添加', '实现', '创建', '修复', '改进', '优化', '重构',
+            "的",
+            "是",
+            "了",
+            "和",
+            "在",
+            "有",
+            "一",
+            "个",
+            "中",
+            "为",
+            "给",
+            "到",
+            "把",
+            "被",
+            "从",
+            "对",
+            "可以",
+            "要",
+            "就",
+            "也",
+            "很",
+            "不",
+            "没有",
+            "这",
+            "那",
+            "什么",
+            "怎么",
+            "谁",
+            "何时",
+            "是否",
+            "添加",
+            "实现",
+            "创建",
+            "修复",
+            "改进",
+            "优化",
+            "重构",
         }
 
     def extract(self, task_description: str) -> List[str]:
@@ -143,14 +219,14 @@ class KeywordExtractor:
         words = []
 
         # 提取英文单词
-        english_words = re.findall(r'\b[a-zA-Z_]\w*\b', text)
+        english_words = re.findall(r"\b[a-zA-Z_]\w*\b", text)
         words.extend(english_words)
 
         # 提取中文（先匹配多字词，再逐字）
         # 常见多字词：认证、认可、授权、登录、用户、数据库、性能、错误等
         multi_char_patterns = [
-            r'认证|授权|登录|用户|数据库|缓存|日志|错误|测试|性能|安全|模型|配置|路由|API',
-            r'优化|修复|重构|实现|添加|删除|更新|搜索|排序|分页|分类|导出|导入',
+            r"认证|授权|登录|用户|数据库|缓存|日志|错误|测试|性能|安全|模型|配置|路由|API",
+            r"优化|修复|重构|实现|添加|删除|更新|搜索|排序|分页|分类|导出|导入",
         ]
 
         for pattern in multi_char_patterns:
@@ -159,9 +235,9 @@ class KeywordExtractor:
 
         # 提取剩余中文单字（排除已匹配的）
         matched_text = "".join(words)  # 已匹配的词
-        remaining = re.sub(r'[a-zA-Z_\w\s]', '', text)  # 只保留中文
+        remaining = re.sub(r"[a-zA-Z_\w\s]", "", text)  # 只保留中文
         for m in matched_text:
-            remaining = remaining.replace(m, '', 1)
+            remaining = remaining.replace(m, "", 1)
 
         chinese_chars = list(remaining)
         words.extend(chinese_chars)
@@ -210,15 +286,40 @@ class FileMatcher:
 
         # 要排除的目录
         self.exclude_dirs = {
-            '__pycache__', '.git', '.pytest_cache', 'node_modules',
-            '.venv', 'venv', 'env', '.idea', '.vscode', 'dist', 'build',
-            '.egg-info', '.coverage', '.mypy_cache',
+            "__pycache__",
+            ".git",
+            ".pytest_cache",
+            "node_modules",
+            ".venv",
+            "venv",
+            "env",
+            ".idea",
+            ".vscode",
+            "dist",
+            "build",
+            ".egg-info",
+            ".coverage",
+            ".mypy_cache",
         }
 
         # 代码文件扩展名
         self.code_extensions = {
-            '.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.cpp', '.c',
-            '.go', '.rs', '.rb', '.php', '.cs', '.swift', '.kt', '.scala',
+            ".py",
+            ".js",
+            ".ts",
+            ".jsx",
+            ".tsx",
+            ".java",
+            ".cpp",
+            ".c",
+            ".go",
+            ".rs",
+            ".rb",
+            ".php",
+            ".cs",
+            ".swift",
+            ".kt",
+            ".scala",
         }
 
     def find_by_keywords(self, keywords: List[str], max_results: int = 10) -> List[str]:
@@ -260,11 +361,7 @@ class FileMatcher:
                 file_scores[file_path] = (score, matches)
 
         # 按分数排序
-        sorted_files = sorted(
-            file_scores.items(),
-            key=lambda x: x[1][0],
-            reverse=True
-        )
+        sorted_files = sorted(file_scores.items(), key=lambda x: x[1][0], reverse=True)
 
         # 返回Top N
         result = [path for path, _ in sorted_files[:max_results]]
@@ -287,7 +384,7 @@ class FileMatcher:
         """
         files = []
         try:
-            for file_path in self.project_root.rglob('*'):
+            for file_path in self.project_root.rglob("*"):
                 # 跳过目录和非代码文件
                 if not file_path.is_file():
                     continue
@@ -332,10 +429,10 @@ class FileMatcher:
         # 3. 语义相关性匹配
         # 例如：auth相关词 → auth, 认证, login, 登录
         semantic_map = {
-            'auth': ['auth', '认证', '授权', 'login', '登录'],
-            'user': ['user', '用户', 'profile', '个人资料'],
-            'database': ['database', 'db', '数据库', 'sql'],
-            'cache': ['cache', '缓存', 'redis'],
+            "auth": ["auth", "认证", "授权", "login", "登录"],
+            "user": ["user", "用户", "profile", "个人资料"],
+            "database": ["database", "db", "数据库", "sql"],
+            "cache": ["cache", "缓存", "redis"],
         }
 
         for keyword in keywords:

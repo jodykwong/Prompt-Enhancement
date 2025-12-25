@@ -1,7 +1,7 @@
 ---
-description: Enhance your prompts with AI. IMPORTANT - After execution, I will show you the enhanced prompt and ask for your confirmation before proceeding. You MUST choose from the menu options, not auto-execute.
+description: Enhance your prompts with AI. System analyzes project context and generates enhanced, actionable prompts with steps and acceptance criteria.
 argument-hint: <prompt_text>
-exec: .claude/commands/scripts/enhance.py
+allowed-tools: Bash(python3:*), Bash(cd:*), Bash(ls:*), Read(.)
 ---
 
 # Prompt Enhancement Command - 提示词增强
@@ -159,3 +159,20 @@ A: 可以！编辑 `enhanced_prompt_generator.py` 配置，或联系我进行定
 ```
 
 然后等待 30-60 秒，查看 AI 的增强结果！
+
+---
+
+## ⚙️ 执行步骤
+
+当您使用 `/pe` 命令时，我会执行以下步骤：
+
+1. **加载环境**：读取项目根目录下的 `.env` 文件，确保 `DEEPSEEK_API_KEY` 已设置
+2. **解析提示词**：提取您在 `/pe` 后面输入的提示词文本
+3. **执行增强脚本**：运行 `.claude/commands/scripts/enhance.py` 脚本
+   ```bash
+   python3 .claude/commands/scripts/enhance.py "您的提示词"
+   ```
+4. **显示结果**：脚本会显示原始提示词和增强版本的对比
+5. **等待您的选择**：显示 4 个选项菜单，由您主动选择下一步
+
+**关键**：脚本采用"显示优化建议，等待用户确认"的模式，不会自动执行您的原始请求。

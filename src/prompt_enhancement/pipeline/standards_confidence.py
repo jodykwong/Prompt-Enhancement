@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class QualityGateLevel(str, Enum):
     """Quality gate levels for standards detection"""
+
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
@@ -24,6 +25,7 @@ class QualityGateLevel(str, Enum):
 @dataclass
 class DetectorConfidence:
     """Confidence score from a single detector"""
+
     detector_name: str
     confidence: float
     weight: float
@@ -33,6 +35,7 @@ class DetectorConfidence:
 @dataclass
 class FactorAnalysis:
     """Analysis of confidence factors"""
+
     strongest_detectors: List[str] = field(default_factory=list)
     weakest_detectors: List[str] = field(default_factory=list)
     recommendations: List[str] = field(default_factory=list)
@@ -45,6 +48,7 @@ class FactorAnalysis:
 @dataclass
 class ConfidenceTrendData:
     """Historical confidence trend data (AC6)"""
+
     timestamps: List[str] = field(default_factory=list)
     confidence_history: List[float] = field(default_factory=list)
     improving: bool = False
@@ -56,6 +60,7 @@ class ConfidenceTrendData:
 @dataclass
 class StandardsConfidenceReport:
     """Complete confidence report for standards detection"""
+
     overall_confidence: float
     quality_gate: QualityGateLevel
     detector_scores: Dict[str, float] = field(default_factory=dict)
@@ -93,7 +98,9 @@ class StandardsConfidenceAggregator:
 
     def __init__(self):
         """Initialize aggregator with trend tracking support (AC6)"""
-        self._confidence_history: List[Tuple[str, float]] = []  # (timestamp, confidence) pairs
+        self._confidence_history: List[Tuple[str, float]] = (
+            []
+        )  # (timestamp, confidence) pairs
 
     def aggregate_confidence(
         self,
@@ -177,7 +184,9 @@ class StandardsConfidenceAggregator:
             trend_data=trend_data,
         )
 
-    def _calculate_weighted_confidence(self, scores: Dict[str, Optional[float]]) -> float:
+    def _calculate_weighted_confidence(
+        self, scores: Dict[str, Optional[float]]
+    ) -> float:
         """Calculate weighted average confidence"""
         total_weighted = 0.0
         total_weight = 0.0
@@ -205,7 +214,9 @@ class StandardsConfidenceAggregator:
         else:
             return QualityGateLevel.FAIL
 
-    def _get_standard_scores(self, scores: Dict[str, Optional[float]]) -> Dict[str, float]:
+    def _get_standard_scores(
+        self, scores: Dict[str, Optional[float]]
+    ) -> Dict[str, float]:
         """Get per-standard confidence scores"""
         standard_scores = {
             "naming_conventions": scores.get("naming_conventions", 0.0) or 0.0,
@@ -218,18 +229,18 @@ class StandardsConfidenceAggregator:
         # Sort by confidence (highest first)
         return dict(sorted(standard_scores.items(), key=lambda x: x[1], reverse=True))
 
-    def _identify_low_confidence_standards(self, standard_scores: Dict[str, float]) -> List[str]:
+    def _identify_low_confidence_standards(
+        self, standard_scores: Dict[str, float]
+    ) -> List[str]:
         """Identify standards with low confidence (< 0.5)"""
         return [
-            standard for standard, score in standard_scores.items()
+            standard
+            for standard, score in standard_scores.items()
             if score < 0.5 and score > 0.0
         ]
 
     def _generate_quality_rationale(
-        self,
-        confidence: float,
-        gate: QualityGateLevel,
-        valid_count: int
+        self, confidence: float, gate: QualityGateLevel, valid_count: int
     ) -> str:
         """Generate rationale for quality gate decision"""
         if gate == QualityGateLevel.HIGH:
@@ -241,7 +252,9 @@ class StandardsConfidenceAggregator:
         else:
             return f"Overall confidence {confidence:.1%} indicates detection failures. Standards should not be used without review."
 
-    def _perform_factor_analysis(self, scores: Dict[str, Optional[float]]) -> FactorAnalysis:
+    def _perform_factor_analysis(
+        self, scores: Dict[str, Optional[float]]
+    ) -> FactorAnalysis:
         """Perform analysis of confidence factors"""
         analysis = FactorAnalysis()
 
@@ -249,7 +262,7 @@ class StandardsConfidenceAggregator:
         sorted_detectors = sorted(
             [(k, v) for k, v in scores.items() if v is not None],
             key=lambda x: x[1],
-            reverse=True
+            reverse=True,
         )
         analysis.strongest_detectors = [name for name, _ in sorted_detectors[:3]]
 
@@ -258,10 +271,13 @@ class StandardsConfidenceAggregator:
 
         # Calculate category confidence (FIXED: operator precedence bug)
         analysis.code_standards_confidence = (
-            (scores.get("naming_conventions") or 0.0) + (scores.get("code_organization") or 0.0)
+            (scores.get("naming_conventions") or 0.0)
+            + (scores.get("code_organization") or 0.0)
         ) / 2
         analysis.testing_standards_confidence = scores.get("test_framework") or 0.0
-        analysis.documentation_standards_confidence = scores.get("documentation_style") or 0.0
+        analysis.documentation_standards_confidence = (
+            scores.get("documentation_style") or 0.0
+        )
         analysis.language_detection_confidence = scores.get("project_type") or 0.0
 
         # Generate recommendations
@@ -269,7 +285,9 @@ class StandardsConfidenceAggregator:
 
         return analysis
 
-    def _generate_recommendations(self, scores: Dict[str, Optional[float]]) -> List[str]:
+    def _generate_recommendations(
+        self, scores: Dict[str, Optional[float]]
+    ) -> List[str]:
         """Generate actionable recommendations for improvement"""
         recommendations = []
 
@@ -331,7 +349,9 @@ class StandardsConfidenceAggregator:
 
         # Check consistency (variance < 0.1)
         if len(confidences) >= 3:
-            variance = sum((c - recent_confidence) ** 2 for c in confidences) / len(confidences)
+            variance = sum((c - recent_confidence) ** 2 for c in confidences) / len(
+                confidences
+            )
             consistent = variance < 0.01  # Low variance = consistent
         else:
             consistent = True

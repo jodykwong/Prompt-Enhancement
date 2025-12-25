@@ -149,15 +149,17 @@ class StandardsDisplay:
             lines.append("")
 
         # Add footer with guidance
-        lines.extend([
-            "═" * 50,
-            "",
-            "💡 How to customize:",
-            "  • Use --override to temporarily change standards",
-            "  • Create .pe.yaml for project-wide settings",
-            "  • Use --template [name] for preset configurations",
-            "",
-        ])
+        lines.extend(
+            [
+                "═" * 50,
+                "",
+                "💡 How to customize:",
+                "  • Use --override to temporarily change standards",
+                "  • Create .pe.yaml for project-wide settings",
+                "  • Use --template [name] for preset configurations",
+                "",
+            ]
+        )
 
         return "\n".join(lines)
 
@@ -200,7 +202,9 @@ class StandardsDisplay:
         if medium_count > 0:
             lines.append(f"  • {medium_count} medium confidence standards")
         if low_count > 0:
-            lines.append(f"  ⚠ {low_count} low confidence standards (verify recommended)")
+            lines.append(
+                f"  ⚠ {low_count} low confidence standards (verify recommended)"
+            )
 
         return "\n".join(lines)
 
@@ -235,13 +239,15 @@ class StandardsDisplay:
         for standard in low_confidence:
             lines.append(f"  • {standard.name}: {standard.confidence:.0f}%")
 
-        lines.extend([
-            "",
-            "Recommendations:",
-            "  1. Review detected standards above",
-            "  2. Use --override to correct any errors",
-            "  3. Or create .pe.yaml for project-wide config",
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "Recommendations:",
+                "  1. Review detected standards above",
+                "  2. Use --override to correct any errors",
+                "  3. Or create .pe.yaml for project-wide config",
+                "",
+            ]
+        )
 
         return "\n".join(lines)

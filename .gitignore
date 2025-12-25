@@ -29,3 +29,14 @@ test_results.json
 .DS_Store
 Thumbs.db
 
+# Claude Code 缓存
+.cache/
+
+# 临时脚本和环境修复工具
+ccm-*.sh
+fix_*.sh
+*_fix.sh
+load_*.sh
+run_api.sh
+force_*.sh
+

@@ -12,12 +12,14 @@ from typing import Dict, Optional, Any
 
 class ParseError(Exception):
     """Exception raised when parameter parsing fails."""
+
     pass
 
 
 @dataclass
 class ParseResult:
     """Result of successful parameter parsing."""
+
     prompt: str
     working_dir: str
     overrides: Dict[str, str]
@@ -95,7 +97,9 @@ class ParameterParser:
                 # Handle special case for --override flag with key=value
                 if flag_name == "override":
                     if "=" not in flag_value:
-                        raise ParseError(f"Override flag must be in format --override key=value")
+                        raise ParseError(
+                            f"Override flag must be in format --override key=value"
+                        )
                     key, value = flag_value.split("=", 1)
                     self._validate_override(key, value)
                     flags[key] = value
@@ -109,11 +113,15 @@ class ParameterParser:
                 if token.startswith('"') and token.endswith('"'):
                     # Properly quoted prompt
                     if prompt_token is not None:
-                        raise ParseError("Multiple prompts detected. Only one prompt allowed.")
+                        raise ParseError(
+                            "Multiple prompts detected. Only one prompt allowed."
+                        )
                     prompt_token = token
                 else:
                     # Unquoted text - this is an error
-                    raise ParseError(f'Prompt must be quoted. Did you forget quotes? Try: /pe "{token}"')
+                    raise ParseError(
+                        f'Prompt must be quoted. Did you forget quotes? Try: /pe "{token}"'
+                    )
                 i += 1
 
         # Validate required prompt
@@ -128,8 +136,8 @@ class ParameterParser:
         # Validate prompt length
         if len(prompt) > MAX_PROMPT_LENGTH:
             raise ParseError(
-                f'Prompt too long ({len(prompt)} chars). '
-                f'Maximum {MAX_PROMPT_LENGTH} characters allowed.'
+                f"Prompt too long ({len(prompt)} chars). "
+                f"Maximum {MAX_PROMPT_LENGTH} characters allowed."
             )
 
         # Get working directory with error handling
@@ -142,10 +150,7 @@ class ParameterParser:
             )
 
         return ParseResult(
-            prompt=prompt,
-            working_dir=working_dir,
-            overrides=flags,
-            is_valid=True
+            prompt=prompt, working_dir=working_dir, overrides=flags, is_valid=True
         )
 
     def _tokenize(self, remaining: str) -> list:
@@ -175,7 +180,7 @@ class ParameterParser:
                 quote_end = self._find_closing_quote(remaining, i + 1)
                 if quote_end == -1:
                     raise ParseError("Unclosed quote in command")
-                tokens.append(remaining[i:quote_end + 1])
+                tokens.append(remaining[i : quote_end + 1])
                 i = quote_end + 1
             elif char == " ":
                 # Whitespace separator
@@ -233,11 +238,11 @@ class ParameterParser:
 
         # Unescape sequences in correct order: \\\\ must be handled first
         # Use a temporary placeholder to avoid double-processing
-        content = content.replace('\\\\', '\x00')  # Temp placeholder for backslash
+        content = content.replace("\\\\", "\x00")  # Temp placeholder for backslash
         content = content.replace('\\"', '"')
-        content = content.replace('\\n', '\n')
-        content = content.replace('\\t', '\t')
-        content = content.replace('\x00', '\\')  # Restore backslash
+        content = content.replace("\\n", "\n")
+        content = content.replace("\\t", "\t")
+        content = content.replace("\x00", "\\")  # Restore backslash
 
         return content
 
@@ -254,7 +259,9 @@ class ParameterParser:
         """
         if key not in self.valid_override_options:
             valid_keys = ", ".join(self.valid_override_options.keys())
-            raise ParseError(f"Invalid override key '{key}'. Valid keys are: {valid_keys}")
+            raise ParseError(
+                f"Invalid override key '{key}'. Valid keys are: {valid_keys}"
+            )
 
         valid_values = self.valid_override_options[key]
         if value not in valid_values:

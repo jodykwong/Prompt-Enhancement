@@ -181,7 +181,6 @@ Use --override flag to set standards for a single run:
 
 ## How to Configure Permanently
 Run /pe-setup and specify your preferences, or edit config.yaml directly.""",
-
         "templates": """🎯 Template System
 
 Built-in Templates:
@@ -202,7 +201,6 @@ Creating Custom Templates:
 Template Suggestions:
 The system automatically suggests templates based on your project type.
 When a template matches your project, you'll see a suggestion to use it.""",
-
         "config": """🔧 Configuration
 
 Configuration File: ~/.prompt-enhancement/config.yaml
@@ -232,7 +230,6 @@ You can edit config.yaml directly with your text editor.
 
 Or Use Setup:
 Run /pe-setup for interactive configuration.""",
-
         "examples": """💡 Usage Examples
 
 ### Basic Enhancement
@@ -264,7 +261,6 @@ Run /pe-setup for interactive configuration.""",
 /pe-help-full
 /pe-help standards
 /pe-help templates""",
-
         "api": """🔑 API Key Setup
 
 ## Getting Your API Key
@@ -296,7 +292,6 @@ If you get "API key invalid", make sure:
 - Key is copied completely (no extra spaces)
 - Key is still active (not revoked)
 - Your account has API access""",
-
         "troubleshoot": """🔧 Troubleshooting
 
 ### "API Key Not Configured"
@@ -342,8 +337,9 @@ System degrades gracefully - you'll get generic enhancement.""",
         if topic in HelpSystem.TOPIC_HELP:
             return HelpSystem.TOPIC_HELP[topic]
         else:
-            return f"Unknown topic: {topic}\n\nAvailable topics: " + \
-                   ", ".join(HelpSystem.TOPIC_HELP.keys())
+            return f"Unknown topic: {topic}\n\nAvailable topics: " + ", ".join(
+                HelpSystem.TOPIC_HELP.keys()
+            )
 
     @staticmethod
     def show_full_help() -> str:

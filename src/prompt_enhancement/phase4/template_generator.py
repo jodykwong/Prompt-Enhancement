@@ -68,7 +68,9 @@ class AgentsTemplateGenerator:
         template = self.template_registry.get_template(template_type)
 
         if not template:
-            logger.warning(f"No template found for {template_type}, using generic template")
+            logger.warning(
+                f"No template found for {template_type}, using generic template"
+            )
             template = self._create_generic_template()
 
         # Generate content by filling placeholders
@@ -135,16 +137,16 @@ class AgentsTemplateGenerator:
             "PROJECT_DESCRIPTION": project_info.description,
             "VERSION": project_info.version,
             "LAST_UPDATED": datetime.now().strftime("%Y-%m-%d"),
-
             # Language-specific versions
-            "PYTHON_VERSION": project_info.additional_info.get("python_version", "3.8+"),
+            "PYTHON_VERSION": project_info.additional_info.get(
+                "python_version", "3.8+"
+            ),
             "NODE_VERSION": project_info.additional_info.get("node_version", "14.0+"),
             "GO_VERSION": "1.16+",
             "RUST_VERSION": "1.56+",
             "JAVA_VERSION": "11+",
             "CSHARP_VERSION": "9.0+",
             "DOTNET_VERSION": "6.0+",
-
             # Commands
             "SETUP_COMMAND": project_info.setup_command or "N/A",
             "TEST_COMMAND": project_info.test_command or "N/A",
@@ -154,56 +156,85 @@ class AgentsTemplateGenerator:
             "FORMAT_COMMAND": project_info.format_command or "N/A",
             "TYPE_CHECK_COMMAND": project_info.type_check_command or "N/A",
             "DEV_COMMAND": "npm run dev",
-            "TEST_VERBOSE_COMMAND": project_info.test_command.replace("-v", "-vv") if project_info.test_command else "N/A",
-            "TEST_COVERAGE_COMMAND": f"{project_info.test_command} --cov" if project_info.test_command else "N/A",
-
+            "TEST_VERBOSE_COMMAND": (
+                project_info.test_command.replace("-v", "-vv")
+                if project_info.test_command
+                else "N/A"
+            ),
+            "TEST_COVERAGE_COMMAND": (
+                f"{project_info.test_command} --cov"
+                if project_info.test_command
+                else "N/A"
+            ),
             # Package managers
-            "PACKAGE_MANAGER": project_info.additional_info.get("package_manager", "npm"),
+            "PACKAGE_MANAGER": project_info.additional_info.get(
+                "package_manager", "npm"
+            ),
             "NPM_VERSION": "7.0+",
-            "CODE_FORMATTER": self._detect_code_formatter(project_info.primary_language),
+            "CODE_FORMATTER": self._detect_code_formatter(
+                project_info.primary_language
+            ),
             "TYPE_CHECKER": self._detect_type_checker(project_info.primary_language),
             "LINTER": self._detect_linter(project_info.primary_language),
-            "TEST_FRAMEWORK": self._detect_test_framework(project_info.primary_language),
-
+            "TEST_FRAMEWORK": self._detect_test_framework(
+                project_info.primary_language
+            ),
             # Code style
             "LINE_LENGTH": "88" if project_info.primary_language == "Python" else "100",
-            "INDENTATION": "2 spaces" if "Node" in project_info.primary_language else "4 spaces",
-            "SEMICOLON_REQUIREMENT": "Required" if "Node" in project_info.primary_language else "N/A",
-            "QUOTE_STYLE": "Double quotes" if "Node" in project_info.primary_language else "Single or double",
-
+            "INDENTATION": (
+                "2 spaces" if "Node" in project_info.primary_language else "4 spaces"
+            ),
+            "SEMICOLON_REQUIREMENT": (
+                "Required" if "Node" in project_info.primary_language else "N/A"
+            ),
+            "QUOTE_STYLE": (
+                "Double quotes"
+                if "Node" in project_info.primary_language
+                else "Single or double"
+            ),
             # Project structure
             "PROJECT_STRUCTURE": project_info.project_structure,
             "SRC_DIR": "src" if "Node" in project_info.primary_language else "src",
-            "TESTS_DIR": "tests" if "Python" in project_info.primary_language else "test",
+            "TESTS_DIR": (
+                "tests" if "Python" in project_info.primary_language else "test"
+            ),
             "DIST_DIR": "dist" if "Node" in project_info.primary_language else "build",
             "DOCS_DIR": "docs",
             "CMD_DIR": "cmd",
-
             # Boundaries
-            "PROTECTED_DIRS": ", ".join(project_info.protected_directories) or "legacy, vendor",
+            "PROTECTED_DIRS": ", ".join(project_info.protected_directories)
+            or "legacy, vendor",
             "DEPRECATED_AREAS": "old_api, legacy_module",
             "APPROVAL_REQUIRED": "Database migrations, security changes",
-
             # Testing
             "MIN_COVERAGE": "80",
             "INSTALL_COMMAND": "npm install",
             "LOCK_FILE": "package-lock.json",
             "DEFAULT_PORT": "3000",
-
             # Dependencies
-            "DEPENDENCY_1": project_info.main_dependencies[0] if project_info.main_dependencies else "requests",
+            "DEPENDENCY_1": (
+                project_info.main_dependencies[0]
+                if project_info.main_dependencies
+                else "requests"
+            ),
             "DEPENDENCY_1_PURPOSE": "HTTP library",
-            "DEPENDENCY_2": project_info.main_dependencies[1] if len(project_info.main_dependencies) > 1 else "pytest",
+            "DEPENDENCY_2": (
+                project_info.main_dependencies[1]
+                if len(project_info.main_dependencies) > 1
+                else "pytest"
+            ),
             "DEPENDENCY_2_PURPOSE": "Testing framework",
-
             # Patterns
             "PATTERN_1_NAME": "Error Handling",
             "PATTERN_1_DESCRIPTION": "Standard way to handle errors",
-            "PATTERN_1_EXAMPLE": self._get_error_pattern_example(project_info.primary_language),
+            "PATTERN_1_EXAMPLE": self._get_error_pattern_example(
+                project_info.primary_language
+            ),
             "PATTERN_2_NAME": "Function Documentation",
             "PATTERN_2_DESCRIPTION": "Standard documentation format",
-            "PATTERN_2_EXAMPLE": self._get_doc_pattern_example(project_info.primary_language),
-
+            "PATTERN_2_EXAMPLE": self._get_doc_pattern_example(
+                project_info.primary_language
+            ),
             # Additional
             "ADDITIONAL_TOOLS": "Git",
             "REQUIREMENTS_FILE": "requirements.txt",
@@ -211,13 +242,19 @@ class AgentsTemplateGenerator:
             "ENV_VAR_1_PURPOSE": "API authentication key",
             "ENV_VAR_2": "DEBUG",
             "ENV_VAR_2_PURPOSE": "Debug mode flag",
-            "ERROR_PATTERN_EXAMPLE": self._get_error_pattern_example(project_info.primary_language),
-            "INTERFACE_PATTERN_EXAMPLE": self._get_interface_pattern_example(project_info.primary_language),
+            "ERROR_PATTERN_EXAMPLE": self._get_error_pattern_example(
+                project_info.primary_language
+            ),
+            "INTERFACE_PATTERN_EXAMPLE": self._get_interface_pattern_example(
+                project_info.primary_language
+            ),
             "BINARY_NAME": project_info.name.lower().replace(" ", "_"),
             "LANGUAGES": project_info.primary_language,
             "LANGUAGE_1": project_info.primary_language,
             "LANGUAGE_1_GUIDELINES": f"Follow {project_info.primary_language} standard conventions",
-            "LANGUAGE_2": "TypeScript" if "Node" in project_info.primary_language else "Go",
+            "LANGUAGE_2": (
+                "TypeScript" if "Node" in project_info.primary_language else "Go"
+            ),
             "LANGUAGE_2_GUIDELINES": "Follow community best practices",
         }
 
@@ -348,6 +385,7 @@ class Reader(ABC):
     def _create_generic_template(self) -> Any:
         """Create a generic template as fallback."""
         from .template_registry import AgentsTemplate
+
         return AgentsTemplate(
             template_type=TemplateType.PYTHON,
             name="Generic",
@@ -376,5 +414,5 @@ Minimum {MIN_COVERAGE}% coverage
 
 Never modify: {PROTECTED_DIRS}
 """,
-            placeholders={}
+            placeholders={},
         )

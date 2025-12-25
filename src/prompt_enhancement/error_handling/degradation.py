@@ -97,15 +97,13 @@ class DegradationStrategy:
                 reasons.append("API timeout and no cache")
 
         # If we can still provide some enhancement without standards
-        if (
-            project_detected
-            and not api_timeout
-            and standards_confidence < 0.6
-        ):
+        if project_detected and not api_timeout and standards_confidence < 0.6:
             return DegradationInfo(
                 level=DegradationLevel.WITHOUT_STANDARDS,
                 missing_components=missing_components,
-                reason=" and ".join(reasons) if reasons else "Standards detection failed",
+                reason=(
+                    " and ".join(reasons) if reasons else "Standards detection failed"
+                ),
                 recommendation="Use detected standards or create .pe.yaml for better results",
                 cached=False,
             )
@@ -117,7 +115,11 @@ class DegradationStrategy:
         return DegradationInfo(
             level=DegradationLevel.GENERIC,
             missing_components=missing_components,
-            reason=" and ".join(reasons) if reasons else "Unable to detect project or standards",
+            reason=(
+                " and ".join(reasons)
+                if reasons
+                else "Unable to detect project or standards"
+            ),
             recommendation="Ensure you're in project root with identifying files (package.json, requirements.txt, etc.)",
             cached=False,
         )

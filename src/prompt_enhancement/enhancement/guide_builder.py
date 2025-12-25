@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ImplementationPath(Enum):
     """Different implementation approaches (AC7)."""
+
     SIMPLE = "simple"  # Straightforward approach
     ROBUST = "robust"  # With error handling
     OPTIMIZED = "optimized"  # Performance focused
@@ -32,7 +33,7 @@ class ImplementationGuideSection:
 
     name: str  # Section name
     content: str  # Section content
-    subsections: List['ImplementationGuideSection'] = field(default_factory=list)
+    subsections: List["ImplementationGuideSection"] = field(default_factory=list)
 
 
 @dataclass
@@ -56,7 +57,9 @@ class ValidationResult:
     warnings: List[str] = field(default_factory=list)  # Validation warnings
     errors: List[str] = field(default_factory=list)  # Validation errors
     completeness_percentage: float = 100.0  # How complete the guide is
-    unverifiable_references: List[str] = field(default_factory=list)  # References we couldn't verify
+    unverifiable_references: List[str] = field(
+        default_factory=list
+    )  # References we couldn't verify
 
 
 @dataclass
@@ -128,7 +131,9 @@ class GuideBuilder:
         Returns:
             ImplementationGuide with all components
         """
-        logger.info(f"Building implementation guide with {len(extracted_steps.steps)} steps")
+        logger.info(
+            f"Building implementation guide with {len(extracted_steps.steps)} steps"
+        )
 
         # Generate criteria for each step
         criteria_per_step = []
@@ -181,14 +186,18 @@ class GuideBuilder:
             recommended_path=ImplementationPath.SIMPLE if alternative_paths else None,
             common_pitfalls=pitfalls,
             debugging_tips=tips,
-            rollback_instructions=self._create_rollback_instructions(extracted_steps.steps),
+            rollback_instructions=self._create_rollback_instructions(
+                extracted_steps.steps
+            ),
             links_to_documentation=self._create_documentation_links(),
         )
 
         # Validate guide
         guide.validation = self._validate_guide(guide)
 
-        logger.info(f"Built guide with {len(sections)} sections, validation: {guide.validation.is_valid}")
+        logger.info(
+            f"Built guide with {len(sections)} sections, validation: {guide.validation.is_valid}"
+        )
 
         return guide
 
@@ -212,7 +221,9 @@ class GuideBuilder:
 
         return order if order else [s.number for s in steps]
 
-    def _detect_parallelizable_steps(self, steps: List[ImplementationStep]) -> Dict[int, List[int]]:
+    def _detect_parallelizable_steps(
+        self, steps: List[ImplementationStep]
+    ) -> Dict[int, List[int]]:
         """Detect which steps can run in parallel (AC6)."""
         parallelizable = {}
 
@@ -221,9 +232,11 @@ class GuideBuilder:
             independent = []
 
             for other_step in steps:
-                if (other_step.number != step.number and
-                    step.number not in other_step.dependencies and
-                    other_step.number not in step.dependencies):
+                if (
+                    other_step.number != step.number
+                    and step.number not in other_step.dependencies
+                    and other_step.number not in step.dependencies
+                ):
                     independent.append(other_step.number)
 
             if independent:
@@ -240,36 +253,40 @@ class GuideBuilder:
         paths = []
 
         # Simple path: straight implementation
-        paths.append(PathAlternative(
-            path_type=ImplementationPath.SIMPLE,
-            description="Straightforward implementation with basic error handling",
-            steps=steps,
-            criteria=criteria,
-            tradeoffs={
-                'complexity': 'Low',
-                'implementation_time': 'Quick',
-                'robustness': 'Moderate',
-                'maintainability': 'Good',
-            },
-            alignment_with_project="Aligns with project's quick implementation approach",
-            complexity_estimate="simple",
-        ))
+        paths.append(
+            PathAlternative(
+                path_type=ImplementationPath.SIMPLE,
+                description="Straightforward implementation with basic error handling",
+                steps=steps,
+                criteria=criteria,
+                tradeoffs={
+                    "complexity": "Low",
+                    "implementation_time": "Quick",
+                    "robustness": "Moderate",
+                    "maintainability": "Good",
+                },
+                alignment_with_project="Aligns with project's quick implementation approach",
+                complexity_estimate="simple",
+            )
+        )
 
         # Robust path: with comprehensive error handling
-        paths.append(PathAlternative(
-            path_type=ImplementationPath.ROBUST,
-            description="Implementation with comprehensive error handling and logging",
-            steps=steps,  # Same steps, but with added error handling
-            criteria=criteria,
-            tradeoffs={
-                'complexity': 'Moderate',
-                'implementation_time': 'Longer',
-                'robustness': 'High',
-                'maintainability': 'Excellent',
-            },
-            alignment_with_project="Better for production use in project",
-            complexity_estimate="moderate",
-        ))
+        paths.append(
+            PathAlternative(
+                path_type=ImplementationPath.ROBUST,
+                description="Implementation with comprehensive error handling and logging",
+                steps=steps,  # Same steps, but with added error handling
+                criteria=criteria,
+                tradeoffs={
+                    "complexity": "Moderate",
+                    "implementation_time": "Longer",
+                    "robustness": "High",
+                    "maintainability": "Excellent",
+                },
+                alignment_with_project="Better for production use in project",
+                complexity_estimate="moderate",
+            )
+        )
 
         return paths
 
@@ -283,10 +300,14 @@ class GuideBuilder:
         sections = []
 
         # Overview section
-        sections.append(ImplementationGuideSection(
-            name="Overview",
-            content=self._create_overview(extracted_steps, len(criteria_per_step), len(alternative_paths)),
-        ))
+        sections.append(
+            ImplementationGuideSection(
+                name="Overview",
+                content=self._create_overview(
+                    extracted_steps, len(criteria_per_step), len(alternative_paths)
+                ),
+            )
+        )
 
         # Implementation Steps section
         steps_section = ImplementationGuideSection(
@@ -294,10 +315,12 @@ class GuideBuilder:
             content=f"Total {len(extracted_steps.steps)} steps to complete",
         )
         for step in extracted_steps.steps:
-            steps_section.subsections.append(ImplementationGuideSection(
-                name=f"Step {step.number}",
-                content=step.content,
-            ))
+            steps_section.subsections.append(
+                ImplementationGuideSection(
+                    name=f"Step {step.number}",
+                    content=step.content,
+                )
+            )
         sections.append(steps_section)
 
         # Verification section
@@ -306,10 +329,12 @@ class GuideBuilder:
             content="Criteria to verify each step is complete",
         )
         for criteria in criteria_per_step:
-            verify_section.subsections.append(ImplementationGuideSection(
-                name=f"Step {criteria.step.number} Verification",
-                content=f"{len(criteria.verification_criteria)} criteria to verify",
-            ))
+            verify_section.subsections.append(
+                ImplementationGuideSection(
+                    name=f"Step {criteria.step.number} Verification",
+                    content=f"{len(criteria.verification_criteria)} criteria to verify",
+                )
+            )
         sections.append(verify_section)
 
         # Testing section
@@ -319,10 +344,12 @@ class GuideBuilder:
         )
         for criteria in criteria_per_step:
             if criteria.testing_guidance:
-                testing_section.subsections.append(ImplementationGuideSection(
-                    name=f"Step {criteria.step.number} Testing",
-                    content=f"Using {criteria.testing_guidance.framework}",
-                ))
+                testing_section.subsections.append(
+                    ImplementationGuideSection(
+                        name=f"Step {criteria.step.number} Testing",
+                        content=f"Using {criteria.testing_guidance.framework}",
+                    )
+                )
         sections.append(testing_section)
 
         # Alternative Approaches section
@@ -332,10 +359,12 @@ class GuideBuilder:
                 content=f"{len(alternative_paths)} alternative implementation paths",
             )
             for path in alternative_paths:
-                alt_section.subsections.append(ImplementationGuideSection(
-                    name=path.description,
-                    content=f"Complexity: {path.complexity_estimate}",
-                ))
+                alt_section.subsections.append(
+                    ImplementationGuideSection(
+                        name=path.description,
+                        content=f"Complexity: {path.complexity_estimate}",
+                    )
+                )
             sections.append(alt_section)
 
         # Common Pitfalls section
@@ -394,18 +423,24 @@ class GuideBuilder:
         links = []
 
         if self.context.framework:
-            links.append(f"Framework: https://docs.example.com/{self.context.framework}")
+            links.append(
+                f"Framework: https://docs.example.com/{self.context.framework}"
+            )
 
         test_result = self.context.detected_standards.get("test_framework")
         if test_result:
-            links.append(f"Testing: https://docs.example.com/{test_result.detected_value}")
+            links.append(
+                f"Testing: https://docs.example.com/{test_result.detected_value}"
+            )
 
         if self.context.language:
             links.append(f"Language: https://docs.example.com/{self.context.language}")
 
         return links
 
-    def _collect_pitfalls(self, criteria_per_step: List[GeneratedCriteria]) -> List[str]:
+    def _collect_pitfalls(
+        self, criteria_per_step: List[GeneratedCriteria]
+    ) -> List[str]:
         """Collect all pitfalls from criteria."""
         pitfalls = []
         for criteria in criteria_per_step:
@@ -413,7 +448,9 @@ class GuideBuilder:
         # Remove duplicates while preserving order
         return list(dict.fromkeys(pitfalls))
 
-    def _collect_debugging_tips(self, criteria_per_step: List[GeneratedCriteria]) -> List[str]:
+    def _collect_debugging_tips(
+        self, criteria_per_step: List[GeneratedCriteria]
+    ) -> List[str]:
         """Collect all debugging tips from criteria."""
         tips = []
         for criteria in criteria_per_step:
@@ -429,20 +466,24 @@ class GuideBuilder:
 
         # AC8: Each step should have criteria
         for step in guide.steps:
-            criteria_for_step = [c for c in guide.criteria_per_step if c.step.number == step.number]
+            criteria_for_step = [
+                c for c in guide.criteria_per_step if c.step.number == step.number
+            ]
             if not criteria_for_step:
                 errors.append(f"Step {step.number} has no verification criteria")
 
         # AC8: Validate step order is consistent
         for i, step_num in enumerate(guide.execution_order):
             if step_num not in [s.number for s in guide.steps]:
-                errors.append(f"Execution order references non-existent step {step_num}")
+                errors.append(
+                    f"Execution order references non-existent step {step_num}"
+                )
 
         # AC8: Check for conflicting recommendations
         if guide.alternative_paths:
             # Check if paths have consistent steps
             for i, path1 in enumerate(guide.alternative_paths):
-                for j, path2 in enumerate(guide.alternative_paths[i+1:], i+1):
+                for j, path2 in enumerate(guide.alternative_paths[i + 1 :], i + 1):
                     # Paths shouldn't completely contradict
                     pass
 
@@ -450,10 +491,14 @@ class GuideBuilder:
         for criteria in guide.criteria_per_step:
             for example in criteria.code_examples:
                 if "..." in example.content:
-                    warnings.append(f"Code example contains incomplete template markers")
+                    warnings.append(
+                        f"Code example contains incomplete template markers"
+                    )
 
         # AC8: Validate testing guidance exists
-        test_steps = [c for c in guide.criteria_per_step if "test" in c.step.content.lower()]
+        test_steps = [
+            c for c in guide.criteria_per_step if "test" in c.step.content.lower()
+        ]
         if test_steps and not any(c.testing_guidance for c in test_steps):
             warnings.append("Some test steps lack testing guidance")
 

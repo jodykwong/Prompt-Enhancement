@@ -38,7 +38,7 @@ class PeCommand:
                 standards_seconds=2,
                 llm_seconds=5,
                 formatting_seconds=1,
-                cache_seconds=1
+                cache_seconds=1,
             )
             self.performance_tracker.set_budget(self.time_budget)
         except Exception:
@@ -141,41 +141,33 @@ class PeCommand:
         if "prompt" in error_msg_lower and "missing" in error_msg_lower:
             error_code = self.ERROR_MISSING_PROMPT
             message = (
-                'Missing required prompt.\n'
+                "Missing required prompt.\n"
                 'Usage: /pe "your prompt here"\n\n'
                 'Example: /pe "Help me write better error handling"'
             )
         elif "empty" in error_msg_lower:
             error_code = self.ERROR_EMPTY_PROMPT
-            message = (
-                'Prompt cannot be empty.\n'
-                'Usage: /pe "your prompt here"'
-            )
+            message = "Prompt cannot be empty.\n" 'Usage: /pe "your prompt here"'
         elif "flag" in error_msg_lower and "invalid" in error_msg_lower:
             error_code = self.ERROR_INVALID_FLAG
             message = (
-                f'{error_message}\n\n'
-                'Valid flags: --override, --template, --type'
+                f"{error_message}\n\n" "Valid flags: --override, --template, --type"
             )
         elif "override" in error_msg_lower:
             error_code = self.ERROR_INVALID_OVERRIDE
             message = (
-                f'{error_message}\n\n'
+                f"{error_message}\n\n"
                 'Example: /pe --override naming=camelCase "my prompt"'
             )
         elif "quote" in error_msg_lower:
             error_code = self.ERROR_PARSE_ERROR
             message = (
-                'Prompt must be enclosed in quotes.\n'
-                'Example: /pe "your prompt here"'
+                "Prompt must be enclosed in quotes.\n" 'Example: /pe "your prompt here"'
             )
         else:
             # Generic parse error
             error_code = self.ERROR_PARSE_ERROR
-            message = (
-                f'{error_message}\n\n'
-                'Usage: /pe "your prompt here"'
-            )
+            message = f"{error_message}\n\n" 'Usage: /pe "your prompt here"'
 
         logger.debug(f"Parse error: {error_message}")
 
