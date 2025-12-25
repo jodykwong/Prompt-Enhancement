@@ -43,12 +43,14 @@
   - CodingTemplateManager：懒加载架构（0.17ms 初始化）
   - 38个测试，全部通过 ✅ | **性能提升 863x** ✅
 
-- 🏗️ **AGENTS.md 自动生成** - 为新项目生成边界约束说明（Day 8-9 计划中）
+- 🏗️ **AGENTS.md 自动生成** - 为新项目生成边界约束说明（Day 8-9 ✅ 完成）
   - 技术栈检测
   - 命令提取
   - 代码风格推断
+  - 29个测试，全部通过 ✅ | 7语言支持，5000+行模板 ✅
 
-- ⚡ **性能优化** - 冷启动 30s → 15s，缓存命中 10s → 5s（Day 10 计划中）
+- ⚡ **性能优化** - 冷启动 30s → 15s，缓存命中 10s → 5s（Phase 1-4 ✅ 完成）
+  - Phase 5 并发优化计划中 📅
 
 ---
 
@@ -135,9 +137,9 @@ nano .env
 
 ---
 
-## 🚀 快速开始
+## ⚡ 使用 /pe 命令
 
-### 当前开发版本使用 (/pe 命令)
+### 当前开发版本使用
 
 ```bash
 /pe 您的提示词
@@ -473,119 +475,28 @@ MVP 包含以下测试用例：
 5. 代码审查：提交代码前进行自查，确保符合编码规范
 
 验证标准：bug 完全修复，相关测试通过，无新增问题。
-```
 
-## 📂 项目结构
+## ⚠️ 注意事项
 
-```
-Prompt-Enhancement/
-├── 🔥 部署系统（v2.0.0 新增）
-│   ├── packages/
-│   │   ├── python/                     # pip 包源代码
-│   │   │   ├── setup.py
-│   │   │   ├── pyproject.toml
-│   │   │   └── prompt_enhancement/     # 包模块
-│   │   │       ├── __init__.py
-│   │   │       ├── installer.py        ⭐ 核心安装器
-│   │   │       └── cli.py              ⭐ CLI 接口
-│   │   │
-│   │   └── npm/                        # npm 包源代码
-│   │       ├── package.json
-│   │       └── scripts/
-│   │           ├── install.js          ⭐ 主安装脚本
-│   │           ├── configure.js
-│   │           └── verify.js
-│   │
-│   ├── cli/                            # 一键安装脚本
-│   │   ├── install.sh                  (Linux/macOS)
-│   │   ├── install.py                  (跨平台) ✅ 已测试
-│   │   └── install.ps1                 (Windows)
-│   │
-│   └── docs/deploy/                    # 部署文档
-│       ├── INSTALL.md                  (完整安装指南)
-│       ├── QUICKSTART.md               (5分钟快速开始)
-│       ├── TROUBLESHOOTING.md          (故障排除)
-│       ├── DEPLOYMENT.md               (发布指南)
-│       └── README.md                   (部署总结)
-│
-├── 核心模块
-│   ├── tech_stack_detector.py          # P0.1: 技术栈检测
-│   ├── project_structure_analyzer.py   # P0.2: 项目结构分析
-│   ├── git_history_analyzer.py         # P0.3: Git 历史分析
-│   ├── context_collector.py            # P0.4: 上下文整合 ⭐
-│   ├── enhanced_prompt_generator.py    # P0.5: 增强器集成
-│   └── async_prompt_enhancer.py        # 异步处理核心
-│
-├── 测试
-│   └── tests/
-│       ├── test_tech_stack_detector.py
-│       ├── test_project_structure_analyzer.py
-│       ├── test_git_history_analyzer.py
-│       ├── test_context_collector.py
-│       ├── test_enhanced_prompt_generator.py
-│       └── test_p0_*_integration.py
-│
-├── 验证脚本
-│   ├── verify_p0_1.py
-│   ├── verify_p0_2.py
-│   ├── verify_p0_3.py
-│   ├── verify_p0_4.py
-│   └── verify_p0_5.py
-│
-└── 配置和文档
-    ├── requirements.txt
-    ├── .env.example
-    ├── README.md                       (本文件，已更新)
-    └── docs/
-        ├── 核心功能文档
-        ├── 架构文档
-        └── API 参考
-```
-
-## 🛠️ 技术栈
-
-- **语言**: Python 3.8+
-- **异步框架**: asyncio
-- **测试框架**: pytest
-- **API 集成**: DeepSeek API, OpenAI API
-- **版本控制**: Git
-- **文档**: Markdown
-
-## 📖 关键文档
-
-**快速开始**:
-- **[QUICK_START.md](QUICK_START.md)** - 5 分钟快速开始 ⭐
-- **[USER_GUIDE.md](USER_GUIDE.md)** - 详细使用指南
-
-**API 和架构**:
-- **[API_REFERENCE.md](API_REFERENCE.md)** - 完整 API 参考 (3000+ 字)
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - 系统架构设计 (4000+ 字)
-- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - 测试完整指南 (3500+ 字)
-
-**集成和配置**:
-- **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** - 集成指南 (4000+ 字)
-- **[PROJECT_INITIALIZATION_SUMMARY.md](PROJECT_INITIALIZATION_SUMMARY.md)** - 项目完整概况
-
-**进度报告**:
-- **[P0_6_COMPLETION_REPORT.md](P0_6_COMPLETION_REPORT.md)** - P0.6 完成报告 (最新！)
-- **[P0_4_COMPLETION_REPORT.md](P0_4_COMPLETION_REPORT.md)** - P0.4 详细报告
-- **[IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md)** - 长期改进计划
-
-## 📊 测试覆盖率
-
-- **单元测试**: 100% (31/31 通过) ✅ ← P0.6 更新
-- **代码覆盖率**: 87% ✅
-- **集成测试**: 92% ✅
-- **扩展测试**: 19/19 通过 ✅ ← P0.6 新增
-
-## 注意事项
-
-⚠️ **API 密钥安全**：
+### API 密钥安全
 - 严禁将 API 密钥硬编码到代码中
 - 不要将 `.env` 文件提交到版本控制
 - 使用环境变量或安全的配置管理方案
 
-## 许可证
+### 支持的 API 提供商
+- **DeepSeek API** (推荐) - https://platform.deepseek.com
+- **OpenAI API** - https://platform.openai.com
 
-本项目为 Prompt Enhancement 功能的 MVP 原型，仅用于验证和测试。
+## 📄 许可证
+
+MIT License - 本项目采用 MIT 开源许可证
+
+Prompt Enhancement v1.2.2 是一个生产级的智能提示词增强系统，完全可用于商业和个人项目。
+
+---
+
+**最后更新**: 2025-12-25
+**项目主页**: https://github.com/jodykwong/Prompt-Enhancement
+**Bug 报告**: https://github.com/jodykwong/Prompt-Enhancement/issues
+**问题历史**: [ISSUE_HISTORY.md](ISSUE_HISTORY.md)
 
